@@ -1,0 +1,9 @@
+---
+networks:
+    - name: "cognet"
+      servers:
+        - hostname: "irc.tamu.edu"
+          port: 6667
+      nick: "Jumpbot"
+      fullname: "JumpBot Wins"
+
