@@ -8,7 +8,7 @@ require_relative 'lib/bot'
 def main
     log = Logger.new(STDOUT)
     log.level = Logger::DEBUG
-    config = YAML.load_file('config.yaml')
+    config = YAML.load_file(File.expand_path("../config.yaml", __FILE__))
 
     EventMachine.run do
         bot = Chansey::IRC::Bot.new(log, config)

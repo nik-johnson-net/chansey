@@ -1,9 +1,20 @@
 ---
 networks:
     - name: "cognet"
+      auto: true
       servers:
         - hostname: "irc.tamu.edu"
           port: 6667
-      nick: "Jumpbot"
-      fullname: "JumpBot Wins"
+        - hostname: "irc.floofy-skirts.org"
+          port: 6667
+        - hostname: "irc.drwilco.net"
+          port: 6667
+      nick:
+        - "chansey"
+        - "chansey_"
+        - "chansey~"
+      fullname: "Chansey IRC Bot"
+      channels:
+        # - "#tamulug"
+        - "#bottest"
 

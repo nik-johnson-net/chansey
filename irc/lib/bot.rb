@@ -37,9 +37,9 @@ class Chansey::IRC::Bot
         end
 
         # Connect to the autoload networks
-        @log.debug "Bot initializing, connecting networks"
+        @log.debug "Bot initializing, connecting to networks"
         @networks.each do |n,v|
-            v.connect
+            v.connect if v.auto_connect?
         end
 
         # Declare variable to track IDs

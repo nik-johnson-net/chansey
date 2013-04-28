@@ -68,6 +68,7 @@ module Chansey
             end
 
             def quit(msg)
+                @disconnect = true
                 raw("QUIT :#{msg}")
             end
 
