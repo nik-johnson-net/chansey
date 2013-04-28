@@ -2,13 +2,16 @@
 require 'eventmachine'
 require 'logger'
 require 'yaml'
+require 'trollop'
 
 require_relative 'lib/bot'
 
-def main
-    log = Logger.new(STDOUT)
+def main(opts)
+    log_file = opts[:logfile].empty? ? STDOUT : opts[:logfile]
+    config_file = opts[:config].empty? ? File.expand_path("../config.yaml", __FILE__) : opts[:config]
+    log = Logger.new(log_file)
     log.level = Logger::DEBUG
-    config = YAML.load_file(File.expand_path("../config.yaml", __FILE__))
+    config = YAML.load_file(config_file)
 
     EventMachine.run do
         bot = Chansey::IRC::Bot.new(log, config)
@@ -16,4 +19,9 @@ def main
     end
 end
 
-main
+opts = Trollop::options do
+    opt :logfile, "Log file location", :short => "-l", :default => ""
+    opt :config, "Config file location", :short => "-c", :default => File.expand_path("../config.yaml", __FILE__)
+end
+
+main opts
