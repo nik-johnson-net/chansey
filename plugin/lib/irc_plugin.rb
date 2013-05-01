@@ -135,11 +135,12 @@ module IRCPlugin
         
         line = event['data']['msg']['params']
         first_word = line.split.shift
-        _, _, first_word = first_word.partition(/^#{@command_key}/)
-        if first_word.empty?
-            return nil
+        @log.debug "First word: #{first_word}"
+        if first_word.start_with? @command_key
+            @log.debug "starts with #{@command_key}"
+            return first_word[@command_key.length..-1]
         else
-            return first_word
+            return nil
         end
     end
 end

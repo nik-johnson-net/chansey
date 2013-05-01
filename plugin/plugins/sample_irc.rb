@@ -5,20 +5,24 @@ class MyPlugin < Chansey::Plugin
     events 'irc.privmsg'
 
     def init
-        if !command("test", {:priv => true}, &method(:test_cmd))
-            @log.warn "Couldn't register test, already in use"
+        command("botsnack", {:priv => true}, &method(:botsnack))
+
+        command("join", {:priv => true}) do |e|
+            params = e['data']['msg']['params']
+            join(e['data']['network'], params.split[1..-1])
         end
 
-       command("join", {:priv => true}) do |e|
-           params = e['data']['msg']['params']
-           join(e['data']['network'], params.split[1..-1])
-       end
+        command("say") do |e|
+            params = e['data']['msg']['params']
+            privmsg(e['data']['network'],
+                    e['data']['msg']['middle'].first,
+                    params.partition(' ')[2])
+        end
 
-       @command_key = "ಠ_ಠ"
+        @command_key = "."
     end
 
-    def test_cmd(event)
-        p event
+    def botsnack(event)
         if event['data']['msg']['middle'][0][0] == '#'
             privmsg(event['data']['network'],
                     event['data']['msg']['middle'][0],

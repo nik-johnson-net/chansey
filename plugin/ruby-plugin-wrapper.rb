@@ -3,17 +3,21 @@ require 'amqp'
 require 'logger'
 require 'json'
 require 'fiber'
+require 'trollop'
 require_relative 'lib/plugin_wrapper.rb'
 require_relative 'lib/plugin.rb'
 require_relative 'lib/irc_plugin'
 
-if ARGV.size != 1
-   fail "Give a ruby plugin as the only argument"
+opts = Trollop::options do
+    opt :logfile, "Log file location", :short => "-l", :default => ""
 end
+
+Trollop::die "No plugin specified" if ARGV.empty?
 
 EventMachine.run do 
     # Init logger
-    log = Logger.new(STDOUT)
+    log_file = opts[:logfile].empty? ? STDOUT : opts[:logfile]
+    log = Logger.new(log_file)
     log.level = Logger::DEBUG
 
     # Initialize the wrapper
