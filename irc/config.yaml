@@ -13,8 +13,8 @@ networks:
         - "chansey"
         - "chansey_"
         - "chansey~"
-      fullname: "Chansey IRC Bot"
+      fullname: "Chansey IRC Module"
       channels:
-        # - "#tamulug"
+        - "#tamulug"
         - "#bottest"
-
+        - "#minecraft"

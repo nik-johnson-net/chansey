@@ -3,6 +3,12 @@ require 'json'
 require_relative 'network'
 require_relative 'requests'
 
+##
+# This class represents the Bot as a whole. It inherits all responsibility for
+# everything that is outside the scope of a single IRC Network. As well as
+# directing networks, the class handles signals, the AMQP queues, and RPC
+# requests.
+
 class Chansey::IRC::Bot
     include Chansey::IRC::Requests
 
@@ -10,6 +16,11 @@ class Chansey::IRC::Bot
     attr_reader :config
     attr_reader :exchange
     attr_reader :service_name
+
+    ##
+    # Upon instantiation, the class will connect to AMQP and establish its
+    # queue. Each network is also instantiated here and given its configuration
+    # and told to connect if specified with the auto flag.
 
     def initialize(logger, config)
         @service_name = "irc"
@@ -49,6 +60,12 @@ class Chansey::IRC::Bot
         }
     end
 
+
+    ##
+    # This method is called by underlying network objects in order to move
+    # events up the chain of command so that the bot may broadcast events
+    # over the AMQP exchange.
+
     def create_event(network, msg)
         timestamp = Time.now.to_i
         if timestamp == @last_timestamp[:timestamp]
@@ -75,6 +92,12 @@ class Chansey::IRC::Bot
         @log.debug "Pushed event to exchange: #{event}"
     end
 
+
+    ##
+    # This method is called by underlying network objects when one becomes
+    # disconnected. Right now its only purpose is to detect the quit condition
+    # for the EventMachine loop.
+    
     def network_disconnected(net)
         if @quit and @networks.values.all? { |n| n.server.nil? }
             @log.info "Quit wanted and all networks are disconnected. Stopping event loop..."
@@ -82,7 +105,14 @@ class Chansey::IRC::Bot
         end
     end
 
+
     private
+
+    ##
+    # This is the callback when new messages arrive in the AMQP queue.
+    # It parses the data as json and handles parsing failure. On success
+    # the request is passed to a router function (included as a mixin).
+    
     def rpc_handler(metadata, payload)
         @log.debug "Received command: #{payload}"
 
@@ -96,6 +126,10 @@ class Chansey::IRC::Bot
         end
 
     end
+
+    
+    ##
+    # The SIGINT handler. Sends QUIT to all networks.
 
     def signal_int(*args)
         @quit = true
