@@ -2,7 +2,7 @@ module Chansey
     class Plugin
         attr_reader :event_methods
         @@bindings = []
-        @@event_methods = []
+        @@event_methods = [:on_event]
         @@module_inits = []
 
         def self.events(*args)
