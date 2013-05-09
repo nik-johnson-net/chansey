@@ -19,16 +19,23 @@ class String
 end
 
 class Chansey::IRC::Server < EventMachine::Connection
+    # Magic regex to parse IRC according to RFC 2812
 	PARSE_REGEX = /^(?>:([^! ]+)(?:(?:!([^@ ]+))?@(\S+))? )?(\w+)((?: (?![:])(?:\S)+){0,14})(?: :(.*))?$/
+
+    # Set the timeout to detect a connection failure.
+    CONNECTION_TIMEOUT = 180
 
 	def initialize(network)
 		super
 
 		@network = network
 		@bot = network.bot
+        @pingtimer = EM::Timer.new(CONNECTION_TIMEOUT) { close_connection }
 	end
 
 	def receive_data(data)
+        reset_timeout_timer
+
         begin
             unless data.force_encoding('UTF-8').valid_encoding?
                 unless data.force_encoding('ISO-8859-1').valid_encoding?
@@ -95,4 +102,9 @@ class Chansey::IRC::Server < EventMachine::Connection
 		
 		return parsed_lines
 	end
+
+    def reset_timeout_timer
+        @pingtimer.cancel
+        @pingtimer = EM::Timer.new(CONNECTION_TIMEOUT) { close_connection }
+    end
 end
