@@ -1,13 +1,37 @@
 require_relative 'irc_senders'
 require_relative 'server'
 
+##
+# The Network class represents an IRC Chatnet, or network. A Network object is
+# the primary interface for sending IRC commands and handling responses. The
+# underlying server connection is handled by the Server class, which is owned
+# by a Network object. A Server object will only exist so long as the connection
+# is open, but a Network object persists eternally. This gives the ability for
+# multiple servers to be configured under a single network, and in the event a
+# connection is lost to one the bot can reconnect to another server on the same
+# network.
+
 class Chansey::IRC::Network
     include Chansey::IRC::IRC_Senders
 
+    ##
+    # The bot name
     attr_reader :bot
+
+    ##
+    # The underlying Server class, or nil if not connected.
     attr_reader :server
+
+    ##
+    # The name of the network
     attr_reader :name
 
+
+    ##
+    # The +bot+ argument should be the instance of the Bot class which owns
+    # this network. The +config+ variable should contain a Hash of options
+    # for this particular network.
+    
     def initialize(bot, config)
         @name = config["name"]
         @bot = bot
@@ -20,12 +44,23 @@ class Chansey::IRC::Network
         @disconnect = false
     end
 
-    # Is this server set to autoconnect
+
+    ##
+    # This function will return the value of the network's 'auto' configuration
+    # value, which specifies whether or not the server should connect when
+    # the bot is started.
+
     def auto_connect?
         return @config['auto'] || false
     end
 
-    # Callback when the underlying server object receives a line
+    
+    ##
+    # This function is a callback for the instantiated server object. It is
+    # called when the server has parsed IRC lines into a hash and is ready
+    # for processing. +lines+ is an array, since it's possible for multiple
+    # lines to be received at once.
+
     def handle_lines(lines)
         lines.each do |line|
             @bot.log.debug "Network #{@config["name"]} received line: #{line}"
@@ -75,8 +110,11 @@ class Chansey::IRC::Network
         end
     end
 
+
+    ##
     # Callback when the connection is established. IRC registration remains
     # false until 001 is received
+
     def server_connected
         @bot.log.debug "Network #{@config["name"]} sending NICK and USER"
 
@@ -85,8 +123,11 @@ class Chansey::IRC::Network
         user(@nick_list.first, @config["fullname"])
     end
 
+    
+    ##
     # Callback for when the connection is closed. Checks are made for if a
     # reconnect is needed.
+
     def server_disconnected
         @registered = false
         @bot.log.debug "Network #{@config["name"]} received server disconnect"
@@ -102,7 +143,10 @@ class Chansey::IRC::Network
         end
     end
 
+
+    ##
     # Command to start a connection
+
     def connect
         # Check if server list is empty
         if @server_list.size == 0

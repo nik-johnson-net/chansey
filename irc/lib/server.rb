@@ -1,5 +1,13 @@
 require 'eventmachine'
 
+##
+# Adds a function to the String class to convert a string to a form which is
+# safe to be used in AMQP routing keys.
+#
+# Stolen from mokomull and his Erlang bot.
+# 
+# Source: http://git.mmlx.us/?p=erlbot.git;a=blob;f=irc/irc_amqp_listener.erl
+
 class String
     def amqp_safe
         str = ""
@@ -18,12 +26,25 @@ class String
     end
 end
 
+
+##
+# The server object represents the actual TCP connection to the server. It also
+# is responsible for parsing IRC events into an easy to use hash and relaying
+# important events up the chain of command to the Network which instantiated
+# it.
+
 class Chansey::IRC::Server < EventMachine::Connection
     # Magic regex to parse IRC according to RFC 2812
 	PARSE_REGEX = /^(?>:([^! ]+)(?:(?:!([^@ ]+))?@(\S+))? )?(\w+)((?: (?![:])(?:\S)+){0,14})(?: :(.*))?$/
 
     # Set the timeout to detect a connection failure.
     CONNECTION_TIMEOUT = 180
+
+
+    ##
+    # The class should only be instantiated by EventMachine itself, since it
+    # should be passed as the class type when calling EM.connect(). +network+
+    # is the network which instantiated the class.
 
 	def initialize(network)
 		super
@@ -32,6 +53,11 @@ class Chansey::IRC::Server < EventMachine::Connection
 		@bot = network.bot
         @pingtimer = EM::Timer.new(CONNECTION_TIMEOUT) { close_connection }
 	end
+
+
+    ##
+    # EventMachine callback for receiving data. Guesses at the encoding and 
+    # then parses.
 
 	def receive_data(data)
         reset_timeout_timer
@@ -50,10 +76,18 @@ class Chansey::IRC::Server < EventMachine::Connection
         end
 	end
 
+
+    ##
+    # EventMachine callback for after the TCP connection is fully established.
+
 	def connection_completed
         super
         @network.server_connected
 	end
+
+
+    ##
+    # EventMachine callback for after the network connection is disconnected.
 
 	def unbind
 		@network.server_disconnected
