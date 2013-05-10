@@ -65,47 +65,12 @@ class Chansey::IRC::Network
         lines.each do |line|
             @bot.log.debug "Network #{@config["name"]} received line: #{line}"
 
-            case line[:command]
-            when :ping
-                pong(line[:params])
+            # Convert the name into a function name and call the response if
+            # funtion is defined
+            method_name = "on_#{line[:command]}"
+            method(method_name).call(line) if respond_to?(method_name, true)
 
-            when "433".to_sym
-                if !@registered
-                    # NICK collision on connect
-                    @bot.log.warn "Nick collision on #{@name}"
-                    @nick_list.rotate!
-                    server_connected
-                end
-
-            when "001".to_sym
-                # Command to run on connect
-                @registered = true
-                join(@config['channels'])
-
-                # Start a periodic timer to change nick to the first choice
-                if @current_nick != @config['nick'].first
-                    @bot.log.info "Starting timer to attempt nick changes to first choice on #{@name}"
-
-                    @timer = EventMachine::PeriodicTimer.new(300) do
-                        nick(@config['nick'].first)
-                    end
-                end
-
-            when :nick
-                if line[:nick] == @current_nick
-                    @current_nick = line[:params]
-                    # Reset the nick_list if we changed to the first name 
-                    if line[:params] == @config['nick'].first
-                        @nick_list = @config['nick'].dup
-                        if @timer
-                            @bot.log.info "Nick change timer stopped due to successful nick change"
-                            @timer.cancel
-                        end
-                    end
-                end
-
-            end
-
+            # Pass the message up to the bot for forwarding to AMQP
             bot.create_event(@config["name"], line)
         end
     end
@@ -159,5 +124,65 @@ class Chansey::IRC::Network
 
         @bot.log.info "Connecting to #{hostname}:#{port}"
         @server = EM.connect(hostname, port, Chansey::IRC::Server, self)
+    end
+
+    private
+
+
+    ##
+    # Responds to pings
+
+    def on_ping(message)
+        pong( message[:params] )
+    end
+
+    
+    ##
+    # Responds to NICK COLLISION errors
+
+    def on_433(message)
+        if !@registered
+            # NICK collision on connect
+            @bot.log.warn "Nick collision on #{@name}"
+            @nick_list.rotate!
+            server_connected
+        end
+    end
+
+
+    ##
+    # Responds to WELCOME messages
+
+    def on_001(message)
+        # Command to run on connect
+        @registered = true
+        join(@config['channels'])
+
+        # Start a periodic timer to change nick to the first choice
+        if @current_nick != @config['nick'].first
+            @bot.log.info "Starting timer to attempt nick changes to first choice on #{@name}"
+
+            @timer = EventMachine::PeriodicTimer.new(300) do
+                nick(@config['nick'].first)
+            end
+        end
+    end
+
+
+    ##
+    # Responds to NICK commands
+
+    def on_nick(message)
+        if line[:nick] == @current_nick
+            @current_nick = line[:params]
+            # Reset the nick_list if we changed to the first name 
+            if line[:params] == @config['nick'].first
+                @nick_list = @config['nick'].dup
+                if @timer
+                    @bot.log.info "Nick change timer stopped due to successful nick change"
+                    @timer.cancel
+                end
+            end
+        end
     end
 end
