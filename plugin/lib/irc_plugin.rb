@@ -18,8 +18,8 @@ module IRCPlugin
 
         cmd = extract_command(event)
         @log.debug "Command: #{cmd}"
-        if cmd
-            cmd = @_command_map[cmd]
+        if cmd and cmd = @_command_map[cmd]
+            # cmd = @_command_map[cmd]
             if event['data']['msg']['middle'][0][0] == '#' and cmd.public
                 @log.debug "Firing public event #{cmd.command}"
                 cmd.fire(event)

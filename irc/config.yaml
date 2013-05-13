@@ -10,11 +10,9 @@ networks:
         - hostname: "irc.drwilco.net"
           port: 6667
       nick:
-        - "chansey"
-        - "chansey_"
-        - "chansey~"
+        - "jumptest"
+        - "jumptest_"
+        - "jumptest~"
       fullname: "Chansey IRC Module"
       channels:
-        - "#tamulug"
         - "#bottest"
-        - "#minecraft"

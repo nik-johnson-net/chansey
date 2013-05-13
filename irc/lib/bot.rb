@@ -1,7 +1,6 @@
 require 'amqp'
 require 'json'
 require_relative 'network'
-require_relative 'requests'
 require_relative 'rpc_handler'
 
 ##
@@ -24,10 +23,11 @@ module Chansey
             # queue. Each network is also instantiated here and given its configuration
             # and told to connect if specified with the auto flag.
 
-            def initialize(logger, config)
+            def initialize(logger, config, restart=nil)
                 @service_name = "irc"
                 @quit = false
                 @log = logger
+                @restart = restart
                 @config = config
                 @networks = {}
 
@@ -105,16 +105,41 @@ module Chansey
             end
 
 
+            ##
+            # Restarts the bot, sending reason to all servers
+
+            def restart(reason="Restarting IRC Module")
+                @log.info "Restarting bot..."
+
+                @quit = true
+                @networks.each do |k,v|
+                    v.quit(reason)
+                end
+            end
+
+
+            ##
+            # Stops the bot, sending reason to all servers
+
+            def stop(reason="Stopping IRC Module")
+                @log.info "Stopping bot..."
+
+                @quit = true
+                @restart.restart = false if @restart
+                @networks.each do |k,v|
+                    v.quit(reason)
+                end
+            end
+
             private
 
             ##
             # The SIGINT handler. Sends QUIT to all networks.
 
             def signal_int(*args)
-                @quit = true
-                @networks.each do |k,v|
-                    v.quit("Caught SIGINT")
-                end
+                @log.info "Caught SIGINT"
+
+                stop("Caught SIGINT")
             end
         end
     end

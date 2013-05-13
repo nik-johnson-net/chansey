@@ -7,6 +7,15 @@ require 'trollop'
 
 require_relative 'lib/bot'
 
+# This is such a hack....
+class RestartToggleClass
+    attr_accessor :restart
+
+    def initialize
+        @restart = true
+    end
+end
+
 def main(opts)
     # Set logging to be STDOUT if the log option is not specified
     log_file = opts[:logfile].empty? ? STDOUT : opts[:logfile]
@@ -18,15 +27,20 @@ def main(opts)
     log = Logger.new(log_file)
     log.level = Logger::DEBUG
 
-    # Load the configuration file
-    config = YAML.load_file(config_file)
+    # Control whether to restart the bot upon a shutdown sequence or just quit
+    restart = RestartToggleClass.new
 
-    EventMachine.run do
-        bot = Chansey::IRC::Bot.new(log, config)
+    while restart.restart
+        # Load the configuration file
+        config = YAML.load_file(config_file)
 
-        # Signal traps callback to the bot for clean shutdowns and other
-        # interactions.
-        trap "INT", &bot.method(:signal_int)
+        EventMachine.run do
+            bot = Chansey::IRC::Bot.new(log, config, restart)
+
+            # Signal traps callback to the bot for clean shutdowns and other
+            # interactions.
+            trap "INT", &bot.method(:signal_int)
+        end
     end
 end
 

@@ -40,6 +40,11 @@ module Chansey
             
             ##
             # Requests
+            
+            def on_restart(request)
+                reason = request.opts("reason")
+                @bot.restart(*reason)
+            end
 
             def on_raw(request)
                 params = {
