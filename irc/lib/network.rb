@@ -173,10 +173,10 @@ class Chansey::IRC::Network
     # Responds to NICK commands
 
     def on_nick(message)
-        if line[:nick] == @current_nick
-            @current_nick = line[:params]
+        if message[:nick] == @current_nick
+            @current_nick = message[:params]
             # Reset the nick_list if we changed to the first name 
-            if line[:params] == @config['nick'].first
+            if message[:params] == @config['nick'].first
                 @nick_list = @config['nick'].dup
                 if @timer
                     @bot.log.info "Nick change timer stopped due to successful nick change"
