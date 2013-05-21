@@ -28,7 +28,7 @@ module Chansey
                 latest_item = @last_item
 
                 feed.items.each do |item|
-                    @log.debug "Last check date: #{@last_item}, item date: #{item.date}, bool: #{item.date < @last_item}"
+                    @log.debug "Feed: #{feed.channel.title}: Last check date: #{@last_item}, item date: #{item.date}, bool: #{item.date <= @last_item}"
                     next if item.date <= @last_item
 
                     # New item
