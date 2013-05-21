@@ -34,12 +34,16 @@ def main(opts)
         # Load the configuration file
         config = YAML.load_file(config_file)
 
-        EventMachine.run do
-            bot = Chansey::IRC::Bot.new(log, config, restart)
+        begin
+            EventMachine.run do
+                bot = Chansey::IRC::Bot.new(log, config, restart)
 
-            # Signal traps callback to the bot for clean shutdowns and other
-            # interactions.
-            trap "INT", &bot.method(:signal_int)
+                # Signal traps callback to the bot for clean shutdowns and other
+                # interactions.
+                trap "INT", &bot.method(:signal_int)
+            end
+        rescue => e
+            log.fatal "FATAL Uncaught exception: #{e.exception}: #{e.message}\n#{e.backtrace.join("\n")}"
         end
     end
 end

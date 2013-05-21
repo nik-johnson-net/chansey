@@ -14,15 +14,19 @@ end
 
 Trollop::die "No plugin specified" if ARGV.empty?
 
-EventMachine.run do 
-    # Init logger
-    log_file = opts[:logfile].empty? ? STDOUT : opts[:logfile]
-    log = Logger.new(log_file)
-    log.level = Logger::DEBUG
+begin
+    EventMachine.run do 
+        # Init logger
+        log_file = opts[:logfile].empty? ? STDOUT : opts[:logfile]
+        log = Logger.new(log_file)
+        log.level = Logger::DEBUG
 
-    # Initialize the wrapper
-    pw = Chansey::PluginWrapper.new(log)
+        # Initialize the wrapper
+        pw = Chansey::PluginWrapper.new(log)
 
-    # Load and instantiate plugin
-    pw.load ARGV[0]
+        # Load and instantiate plugin
+        pw.load ARGV[0]
+    end
+rescue => e
+    log.fatal "FATAL Uncaught exception: #{e.exception}: #{e.message}\n#{e.backtrace.join("\n")}"
 end

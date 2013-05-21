@@ -34,8 +34,12 @@ def main(opts)
         # Load the configuration file
         config = YAML.load_file(config_file)
 
-        EventMachine.run do
-            controller = Chansey::RSS::Controller.new(log, config, restart)
+        begin
+            EventMachine.run do
+                controller = Chansey::RSS::Controller.new(log, config, restart)
+            end
+        rescue => e
+            log.fatal "FATAL Uncaught exception: #{e.exception}: #{e.message}\n#{e.backtrace.join("\n")}"
         end
     end
 end
