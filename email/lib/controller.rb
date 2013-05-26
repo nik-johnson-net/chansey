@@ -12,16 +12,24 @@ module Chansey
                 @accounts = {}
 
                 @config['accounts'].each do |config|
-                    @accounts[config['email']] = Email::Account.new(
+                    new_account = Email::Account.new(
                         @log,
                         config['email'],
-                        config['password'],
                         config['server'],
                         config['port'],
                         config['ssl']
                     )
+                    new_account.login( config['password'] ) do
+                        new_account.handle_unread_emails do |*args|
+                            new_account.process_email(*args)
+                        end.callback do
+                            new_account.idle( &new_account.method(:process_email) )
+                        end
+                    end
+
+                    @accounts[config['email']] = new_account
                 end
-            end
-        end
-    end
-end
+            end # End init
+        end # End controller
+    end # End Email
+end # End Chansey
