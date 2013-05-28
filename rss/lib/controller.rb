@@ -1,32 +1,8 @@
 require 'amqp'
 require 'json'
 require_relative 'rssfetch'
-
-##
-# Adds a function to the String class to convert a string to a form which is
-# safe to be used in AMQP routing keys.
-#
-# Stolen from mokomull and his Erlang bot.
-# 
-# Source: http://git.mmlx.us/?p=erlbot.git;a=blob;f=irc/irc_amqp_listener.erl
-
-class String
-    def amqp_safe
-        str = ""
-        each_char do |c|
-            case c
-            when /[0-9a-z]/
-                str += c
-            when /[A-Z]/
-                str += "C#{c.downcase}"
-            else
-                str += "X#{c.unpack('C')[0].to_s(16).upcase}"
-            end
-        end
-
-        return str
-    end
-end
+require_relative '../../common/string'
+require_relative '../../common/event'
 
 module Chansey
     module RSS
@@ -40,6 +16,7 @@ module Chansey
                 @log = log
                 @config = config
                 @restart = restart
+                @egen = Common::EventGenerator.new(@service_name)
                 @period = config['timer'] || DEFAULT_TIMER
                 @feeds = []
 
@@ -48,12 +25,6 @@ module Chansey
                 @log.info "Connected to AMQP Broker"
                 @mq = AMQP::Channel.new(@amqp)
                 @exchange = @mq.topic("chansey")
-
-                # Declare variable to track IDs
-                @last_timestamp = {
-                    :timestamp => Time.now.to_i,
-                    :counter => 0
-                }
 
                 @config['feeds'].each do |f|
                     @feeds << RSS::RSSFetch.new(self, f)
@@ -75,25 +46,9 @@ module Chansey
             # over the AMQP exchange.
 
             def create_event(msg)
-                timestamp = Time.now.to_i
-                if timestamp == @last_timestamp[:timestamp]
-                    @last_timestamp[:counter] += 1
-                else
-                    @last_timestamp[:timestamp] = timestamp
-                    @last_timestamp[:counter] = 0
-                end
-                id = "%d%d%06d" % [ Process.pid, timestamp, @last_timestamp[:counter] ]
-
-                event = {
-                    :type => "event",
-                    :timestamp => Time.now.to_i,
-                    :id => id,
-                    :service => @service_name.amqp_safe,
-                    :event => 'newitem',
-                    :data => msg
-                }
-                @exchange.publish(event.to_json,
-                                  :routing_key => "chansey.event.#{@service_name.amqp_safe}.#{event[:event].amqp_safe}")
+                event = @egen.event('newitem', msg)
+                route = "chansey.event.#{@service_name.amqp_safe}.#{event[:event].amqp_safe}"
+                @exchange.publish(event.to_json, :routing_key => route)
                 @log.debug "Pushed event to exchange: #{event}"
             end
         end # End Controller

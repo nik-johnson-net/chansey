@@ -2,6 +2,7 @@ require 'amqp'
 require 'json'
 require_relative 'network'
 require_relative 'rpc_handler'
+require_relative '../../common/event'
 
 ##
 # This class represents the Bot as a whole. It inherits all responsibility for
@@ -30,6 +31,7 @@ module Chansey
                 @restart = restart
                 @config = config
                 @networks = {}
+                @egen = Common::EventGenerator.new(@service_name)
 
                 # Connect and instantiate AMQP Exchanges
                 @amqp = AMQP.connect(:host => '127.0.0.1')
@@ -51,12 +53,6 @@ module Chansey
                 @networks.each do |n,v|
                     v.connect if v.auto_connect?
                 end
-
-                # Declare variable to track IDs
-                @last_timestamp = {
-                    :timestamp => Time.now.to_i,
-                    :counter => 0
-                }
             end
 
 
@@ -66,28 +62,14 @@ module Chansey
             # over the AMQP exchange.
 
             def create_event(network, msg)
-                timestamp = Time.now.to_i
-                if timestamp == @last_timestamp[:timestamp]
-                    @last_timestamp[:counter] += 1
-                else
-                    @last_timestamp[:timestamp] = timestamp
-                    @last_timestamp[:counter] = 0
-                end
-                id = "%d%d%06d" % [ Process.pid, timestamp, @last_timestamp[:counter] ]
-
-                event = {
-                    :type => "event",
-                    :timestamp => Time.now.to_i,
-                    :id => id,
-                    :service => @service_name.amqp_safe,
-                    :event => msg[:command],
-                    :data => {
+                data = {
                     :network => "#{network}",
                     :msg     => msg
                 }
-                }
-                @exchange.publish(event.to_json,
-                                  :routing_key => "chansey.event.#{@service_name.amqp_safe}.#{msg[:command].to_s.amqp_safe}")
+                event = @egen.event(msg[:command], data)
+                route = "chansey.event.#{@service_name.amqp_safe}.#{msg[:command].to_s.amqp_safe}"
+
+                @exchange.publish(event.to_json, :routing_key => route)
                 @log.debug "Pushed event to exchange: #{event}"
             end
 
