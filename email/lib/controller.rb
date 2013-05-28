@@ -17,7 +17,8 @@ module Chansey
                         config['email'],
                         config['server'],
                         config['port'],
-                        config['ssl']
+                        config['ssl'],
+                        &method(:generate_event)
                     )
                     new_account.login( config['password'] ) do
                         new_account.handle_unread_emails do |*args|
@@ -30,6 +31,10 @@ module Chansey
                     @accounts[config['email']] = new_account
                 end
             end # End init
+
+            def generate_event(from, to, subject, body)
+                
+            end # End generate_event
         end # End controller
     end # End Email
 end # End Chansey

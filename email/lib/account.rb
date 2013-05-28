@@ -34,9 +34,10 @@ module Chansey
             HEADER_SEARCH = 'BODY[HEADER.FIELDS (SUBJECT TO FROM)]'
             BODY_SEARCH = 'BODY[1]'
 
-            def initialize(log, account, server, port=993, ssl=true)
+            def initialize(log, account, server, port=993, ssl=true, &block)
                 @log = log
                 @account = account
+                @processor = block
 
                 @imap = EM::IMAP.new(server, port, ssl)
             end
@@ -62,6 +63,7 @@ module Chansey
 
             def process_email(from, to, subject, body)
                 @log.debug "Processing email in #{@account}: From: #{from}, To: #{to}, Subject: #{subject}, Body: #{body}"
+                @processor.call from, to, subject, body
             end
 
             ##
@@ -86,6 +88,13 @@ module Chansey
                         emails.each do |e|
                             yield e[:from], e[:to], e[:subject], e[:body]
                         end
+                        @imap.store( emails.map { |x| x[:seqno] }, '+FLAGS', [:deleted] ).errback do |error|
+                            @log.debug "Couldn't delete emails in #{@account}: #{error}"
+                        end
+                    end.bind! do 
+                        @imap.expunge
+                    end.errback do |error|
+                        @log.debug "Error fetching emails #{@account}: #{error}"
                     end
                 end
             end
