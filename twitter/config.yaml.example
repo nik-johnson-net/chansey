@@ -1,0 +1,9 @@
+---
+oauth:
+    oauth_token: <token>
+    oauth_token_secret: <secret>
+    consumer_key: <key>
+    consumer_secret: <secret>
+
+follow:
+    - 87964
