@@ -1,49 +1,9 @@
-require 'set'
-require_relative 'rpc_request'
-
-##
-# Handles incoming RPC Requests
-
 module Chansey
     module IRC
-        class RPCHandler
-            def initialize(log, service_name, amqp_channel, amqp_exchange, bot)
-                @log = log
-                @bot = bot
-                @exchange = amqp_exchange
-                @channel = amqp_channel
-
-                @log.info "Binding to routing key: chansey.service.#{service_name.amqp_safe}"
-                @queue = @channel.queue('', :auto_delete => true)
-                @queue.bind(@exchange, :routing_key => "chansey.service.#{service_name.amqp_safe}")
-                @queue.subscribe(&method(:receive_request))
-            end
-
-            def receive_request(metadata, request)
-                @log.debug "Received command: #{request}"
-
-                begin
-                    request = JSON.parse(request)
-                    req = IRC::RPCRequest.new(@exchange, metadata, request)
-                    method_name = "on_#{req.command}"
-
-                    if respond_to?(method_name)
-                        method(method_name).call(req)
-                    else
-                        @log.warn "Received RPC Request for unknown command '#{req.command}' from '#{req.origin}'"
-                    end
-                rescue => e
-                    @log.warn "Received bad message and threw #{e.exception}\n#{e.backtrace.join("\n")}"
-                end
-            end
-
-            
-            ##
-            # Requests
-            
+        module RemoteProcedures
             def on_restart(request)
                 reason = request.opts("reason")
-                @bot.restart(*reason)
+                @controller.restart(*reason)
             end
 
             def on_raw(request)
@@ -53,7 +13,7 @@ module Chansey
                 }
 
                 return if !verify_params(request, params)
-                net = @bot.networks[request.opts("network")]
+                net = @controller.networks[request.opts("network")]
                 return if !verify_network(request, net)
 
                 net.raw(request.opts("line"))
@@ -67,7 +27,7 @@ module Chansey
                 }
 
                 return if !verify_params(request, params)
-                net = @bot.networks[request.opts("network")]
+                net = @controller.networks[request.opts("network")]
                 return if !verify_network(request, net)
 
                 net.nick(request.opts("nick"))
@@ -85,7 +45,7 @@ module Chansey
                 }
 
                 return if !verify_params(request, params)
-                net = @bot.networks[request.opts("network")]
+                net = @controller.networks[request.opts("network")]
                 return if !verify_network(request, net)
 
                 net.join(request.opts("channels").keys, request.opts("channels").values)
@@ -99,7 +59,7 @@ module Chansey
                 }
 
                 return if !verify_params(request, params)
-                net = @bot.networks[request.opts("network")]
+                net = @controller.networks[request.opts("network")]
                 return if !verify_network(request, net)
 
                 net.part(request.opts("channels"), request.opts("msg"))
@@ -114,7 +74,7 @@ module Chansey
                 }
 
                 return if !verify_params(request, params)
-                net = @bot.networks[request.opts("network")]
+                net = @controller.networks[request.opts("network")]
                 return if !verify_network(request, net)
 
                 net.mode(request.opts("channel"), request.opts("modes"), request.opts("operands"))
@@ -129,7 +89,7 @@ module Chansey
                 }
 
                 return if !verify_params(request, params)
-                net = @bot.networks[request.opts("network")]
+                net = @controller.networks[request.opts("network")]
                 return if !verify_network(request, net)
 
                 net.topic(request.opts("channel"), request.opts("topic"))
@@ -144,7 +104,7 @@ module Chansey
                 }
 
                 return if !verify_params(request, params)
-                net = @bot.networks[request.opts("network")]
+                net = @controller.networks[request.opts("network")]
                 return if !verify_network(request, net)
 
                 net.invite(request.opts("nick"), request.opts("channel"))
@@ -159,7 +119,7 @@ module Chansey
                 }
 
                 return if !verify_params(request, params)
-                net = @bot.networks[request.opts("network")]
+                net = @controller.networks[request.opts("network")]
                 return if !verify_network(request, net)
 
                 net.invite(request.opts("channels"), request.opts("nicks"), request.opts("msg"))
@@ -178,7 +138,7 @@ module Chansey
                 return if !verify_params(request, params)
 
                 # verify network exists
-                net = @bot.networks[request.opts("network")]
+                net = @controller.networks[request.opts("network")]
                 return if !verify_network(request, net)
 
                 net.privmsg(request.opts("channel"), request.opts("msg"))
@@ -196,7 +156,7 @@ module Chansey
                 return if !verify_params(request, params)
 
                 # verify network exists
-                net = @bot.networks[request.opts("network")]
+                net = @controller.networks[request.opts("network")]
                 return if !verify_network(request, net)
 
                 net.notice(request.opts("channel"), request.opts("msg"))
@@ -212,7 +172,7 @@ module Chansey
                 return if !verify_params(request, params)
 
                 # verify network exists
-                net = @bot.networks[request.opts("network")]
+                net = @controller.networks[request.opts("network")]
                 return if !verify_network(request, net)
 
                 net.notice(request.opts("msg"))
@@ -231,17 +191,6 @@ module Chansey
                     return true
                 end
             end
-
-            def verify_params(request, params)
-                @log.debug "Verifying params: Request: #{request}; Params: #{params}"
-
-                if !params.keys.to_set.subset? request.opts.keys.to_set
-                    request.failure( :reason => "Missing Parameters (#{request.command} requires #{params.keys.join(', ')}" )
-                    return false
-                else
-                    return true
-                end
-            end
-        end # End class
-    end # End IRC
-end # End Chansey
+        end
+    end
+end

@@ -2,36 +2,24 @@ require 'amqp'
 require 'json'
 require_relative 'rssfetch'
 require_relative '../../common/string'
-require_relative '../../common/event'
+require_relative '../../common/service'
 
 module Chansey
     module RSS
-        class Controller
+        class Controller < Common::Service
             DEFAULT_TIMER = 300
 
-            attr_reader :log
-
             def initialize(log, config, restart)
-                @service_name = 'rss'
-                @log = log
-                @config = config
-                @restart = restart
-                @egen = Common::EventGenerator.new(@service_name)
+                super
+                @service_name = config['service_name']
                 @period = config['timer'] || DEFAULT_TIMER
                 @feeds = []
-
-                # Connect and instantiate AMQP Exchanges
-                @amqp = AMQP.connect(:host => '127.0.0.1')
-                @log.info "Connected to AMQP Broker"
-                @mq = AMQP::Channel.new(@amqp)
-                @exchange = @mq.topic("chansey")
 
                 @config['feeds'].each do |f|
                     @feeds << RSS::RSSFetch.new(self, f)
                 end
 
                 @timer = EventMachine::PeriodicTimer.new(@period, method(:on_timer))
-                on_timer
             end
 
             def on_timer

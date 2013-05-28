@@ -16,5 +16,8 @@ networks:
       fullname: "Chansey IRC Module"
       channels:
         - "#bottest"
-        - "#tamulug"
-        - "#minecraft"
+
+amqp:
+    exchange: 'chansey'
+
+service_name: 'irc'

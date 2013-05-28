@@ -32,6 +32,7 @@ def main(opts)
             end
         rescue => e
             log.fatal "FATAL Uncaught exception: #{e.exception}: #{e.message}\n#{e.backtrace.join("\n")}"
+            sleep(1)
         end
     end
 end
