@@ -1,14 +1,12 @@
 require_relative 'account.rb'
+require_relative '../../common/service'
 
 module Chansey
     module Email
-        class Controller
-            attr_reader :log
+        class Controller < Common::Service
 
             def initialize(log, config, restart)
-                @log = log
-                @config = config
-                @restart = restart
+                super
                 @accounts = {}
 
                 @config['accounts'].each do |config|
@@ -22,9 +20,9 @@ module Chansey
                     )
                     new_account.login( config['password'] ) do
                         new_account.handle_unread_emails do |*args|
-                            new_account.process_email(*args)
+                            on_new_email(*args)
                         end.callback do
-                            new_account.idle( &new_account.method(:process_email) )
+                            new_account.idle( &method(:on_new_email) )
                         end
                     end
 
@@ -32,9 +30,15 @@ module Chansey
                 end
             end # End init
 
-            def generate_event(from, to, subject, body)
-                
-            end # End generate_event
+            def on_new_email(from, to, subject, body)
+                data = {
+                    :from => from,
+                    :to => to,
+                    :subject => subject,
+                    :body => body
+                }
+                @egen.event('email.new', body)
+            end # End on_new_email
         end # End controller
     end # End Email
 end # End Chansey
