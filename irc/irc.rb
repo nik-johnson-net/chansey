@@ -6,15 +6,8 @@ require 'yaml'
 require 'trollop'
 
 require_relative 'lib/bot'
+require_relative '../common/service'
 
-# This is such a hack....
-class RestartToggleClass
-    attr_accessor :restart
-
-    def initialize
-        @restart = true
-    end
-end
 
 def main(opts)
     # Set logging to be STDOUT if the log option is not specified
@@ -28,7 +21,7 @@ def main(opts)
     log.level = Logger::DEBUG
 
     # Control whether to restart the bot upon a shutdown sequence or just quit
-    restart = RestartToggleClass.new
+    restart = Chansey::Common::RestartToggleClass.new
 
     while restart.restart
         # Load the configuration file
@@ -44,6 +37,7 @@ def main(opts)
             end
         rescue => e
             log.fatal "FATAL Uncaught exception: #{e.exception}: #{e.message}\n#{e.backtrace.join("\n")}"
+            sleep(1)
         end
     end
 end
