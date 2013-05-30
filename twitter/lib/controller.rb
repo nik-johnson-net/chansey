@@ -1,4 +1,5 @@
 require 'tweetstream'
+require_relative '../../common/service'
 
 class Hash
     def keys_to_sym
@@ -12,12 +13,9 @@ end
 
 module Chansey
     module Twitter
-        class Controller
+        class Controller < Common::Service
             def initialize(log, config, restart)
-                @log = log
-                @config = config
-                @restart = restart
-
+                super
                 @twitter = TweetStream::Client.new(config['oauth'].keys_to_sym)
                 @twitter.on_error(&method(:on_error))
                 @twitter.on_reconnect(&method(:on_reconnect))
@@ -26,6 +24,14 @@ module Chansey
 
             def new_status(status)
                 @log.debug "New status: #{status.from_user} - #{status.full_text}"
+                data = {
+                    :user => status.from_user,
+                    :userid => status.from_user_id,
+                    :text => status.full_text,
+                    :retweet => status.retweet?
+                }
+
+                @egen.event('tweet', data)
             end
 
             private
