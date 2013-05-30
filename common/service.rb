@@ -1,4 +1,6 @@
 require 'json'
+require 'amqp'
+require 'eventmachine'
 require_relative 'hash'
 require_relative 'event'
 require_relative 'rpc'
