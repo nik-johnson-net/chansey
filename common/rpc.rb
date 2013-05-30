@@ -1,4 +1,5 @@
 require 'set'
+require_relative 'string'
 
 module Chansey
     module Common
