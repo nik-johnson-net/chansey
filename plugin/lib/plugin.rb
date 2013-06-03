@@ -1,6 +1,10 @@
+require 'fiber'
+
 module Chansey
     class Plugin
         attr_reader :metadata
+
+        @@initializers = []
 
         # Override new so superclasses don't have to call super.
         def self.new(interface, log, config, name, file, other_meta={})
@@ -16,6 +20,11 @@ module Chansey
                 @metadata.merge!(other_meta)
 
                 interface.new_plugin(self)
+
+                @@initializers.each do |block|
+                    self.instance_eval(&block)
+                end
+
                 initialize
                 self
             end
@@ -43,7 +52,9 @@ module Chansey
             @interface.rpc(@metadata[:name], service, command, opts)
         end
 
-        def deferrable_sync
+        # Returns (true|false), args...
+        def wait_for_deferrable(deferrable)
+            @interface.sync_deferrable(@metadata[:name], deferrable)
         end
 
         def lock(&block)
@@ -56,6 +67,7 @@ module Chansey
         end
 
         def listen_for(*routing_keys)
+            routing_keys.map! { |x| "#{@config['amqp']['exchange']}.event.#{x}" }
             routing_keys.each do |routing_key|
                 @interface.add_binding(@metadata[:name], routing_key)
             end

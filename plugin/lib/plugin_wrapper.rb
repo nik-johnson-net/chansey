@@ -59,6 +59,11 @@ module Chansey
                     @log.warn "Can not reload plugin #{plugin}: plugin not loaded"
                     return "Plugin not loaded"
                 end
+
+                # Plugin's callback
+                plugin_instance.on_unload
+
+                @interface.unload_plugin(plugin)
             end
         end
     end

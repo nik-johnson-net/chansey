@@ -53,22 +53,17 @@ module Chansey
                 plugin
             end
 
-            def unload_plugin(plugin)
-                name = plugin.metadata[:name]
-
-                # Call plugin's callback
-                plugin.on_unload
-
+            def unload_plugin(plugin_name)
                 # Unbind queues
-                remove_binding(name)
-                @rply_queues[name].unbind(@exchange)
+                remove_binding(plugin_name)
+                @rply_queues[plugin_name].unbind(@exchange)
 
                 # Remove entries
-                @locks.delete name
-                @lock_wait.delete name
-                @event_callbacks.delete name
-                @queues.delete name
-                @rply_queues.delete name
+                @locks.delete plugin_name
+                @lock_wait.delete plugin_name
+                @event_callbacks.delete plugin_name
+                @queues.delete plugin_name
+                @rply_queues.delete plugin_name
                 nil
             end
 
@@ -131,6 +126,34 @@ module Chansey
                 @event_callbacks[plugin_name] << method
             end
 
+            def sync_deferrable(plugin_name, deferrable)
+                fiber = Fiber.current
+
+                deferrable.callback do |*args|
+                    if @locks[plugin_name].nil? or @locks[plugin_name] == fiber
+                        fiber.resume(true, *args)
+                    else
+                        @lock_wait[plugin_name] << {
+                            :fiber => fiber,
+                            :args => [true, *args]
+                        }
+                    end
+                end
+
+                deferrable.errback do |*args|
+                    if @locks[plugin_name].nil? or @locks[plugin_name] == fiber
+                        fiber.resume(false, *args)
+                    else
+                        @lock_wait[plugin_name] << {
+                            :fiber => fiber,
+                            :args => [false, *args]
+                        }
+                    end
+                end
+
+                Fiber.yield
+            end
+
             private
 
             def reply_handler_factory(plugin_name)
@@ -152,7 +175,6 @@ module Chansey
                     @fiber_reply_map.delete payload['id']
 
                     if @locks[plugin_name].nil? or @locks[plugin_name] == fiber[:fiber]
-                        @locks[plugin_name] = nil
                         fiber[:timer].cancel
                         fiber[:fiber].resume payload
                     else
