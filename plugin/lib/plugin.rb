@@ -1,56 +1,60 @@
 module Chansey
     class Plugin
-        attr_reader :event_methods
-        @@bindings = []
-        @@event_methods = [:on_event]
-        @@module_inits = []
+        attr_reader :metadata
 
-        def self.events(*args)
-            @@bindings += args.map { |x| "chansey.event.#{x}" }
-        end
+        # Override new so superclasses don't have to call super.
+        def self.new(interface, log, config, name, file, other_meta={})
+            allocate.instance_eval do
+                @interface = interface
+                @log = log
+                @config = config
+                @metadata = {
+                    :name => name,
+                    :filename => file
+                }
 
-        def self.event_handler(*args)
-            @@event_methods += args
-        end
+                @metadata.merge!(other_meta)
 
-        def self.module_init(*args)
-            @@module_inits += args
-        end
-
-        def self.bindings
-            @@bindings
-        end
-
-        def self.spawn_plugin(*args)
-            @@subclass.new(*args)
-        end
-
-        def self.inherited(subclass)
-            @@subclass = subclass
-        end
-
-        def initialize(wrapper)
-            @wrapper = wrapper
-            @log = wrapper.log
-            @@event_methods.map! { |f| method(f) }
-            @@module_inits.map! { |f| method(f) }
-            @@module_inits.each do |x|
-                x.call
+                interface.new_plugin(self)
+                initialize(config)
+                self
             end
         end
 
-        def event_methods
-            @@event_methods
+        # Stub
+        def initialize(*args)
         end
 
-        def init
+        # stub
+        def on_event(m, p)
         end
 
         def rpc(service, command, opts)
-            @wrapper.remote_call(service, command, opts)
+            @interface.rpc(@metadata[:name], service, command, opts)
         end
 
-        def on_event(meta, event)
+        def deferrable_sync
+        end
+
+        def lock(&block)
+            @interface.capture_lock(@metadata[:name])
+            yield
+            @interface.release_lock(@metadata[:name])
+        end
+
+        def on_unload
+        end
+
+        def listen_for(routing_key)
+            @interface.add_binding(@metadata[:name], routing_key)
+        end
+
+        def stop_listening_for(routing_key)
+            @interface.remove_binding(@metadata[:name], routing_key)
+        end
+
+        def add_event_callback(&block)
+            @interface.add_event_callback(@metadata[:name], &block)
         end
     end
 end
