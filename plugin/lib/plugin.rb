@@ -16,9 +16,19 @@ module Chansey
                 @metadata.merge!(other_meta)
 
                 interface.new_plugin(self)
-                initialize(config)
+                initialize
                 self
             end
+        end
+
+        # detect inherited
+        def self.inherited(subclass)
+            puts "Latest inherited set to #{subclass}"
+            @@latest_inherited = subclass
+        end
+
+        def self.latest_plugin
+            @@latest_inherited
         end
 
         # Stub
@@ -45,12 +55,16 @@ module Chansey
         def on_unload
         end
 
-        def listen_for(routing_key)
-            @interface.add_binding(@metadata[:name], routing_key)
+        def listen_for(*routing_keys)
+            routing_keys.each do |routing_key|
+                @interface.add_binding(@metadata[:name], routing_key)
+            end
         end
 
-        def stop_listening_for(routing_key)
-            @interface.remove_binding(@metadata[:name], routing_key)
+        def stop_listening_for(*routing_keys)
+            routing_keys.each do |routing_key|
+                @interface.remove_binding(@metadata[:name], routing_key)
+            end
         end
 
         def add_event_callback(&block)

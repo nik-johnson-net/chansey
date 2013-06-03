@@ -1,32 +1,44 @@
 #!/usr/bin/env ruby
 require 'amqp'
 require 'logger'
-require 'json'
-require 'fiber'
 require 'trollop'
+require 'yaml'
 require_relative 'lib/plugin_wrapper.rb'
-require_relative 'lib/plugin.rb'
-require_relative 'lib/irc_plugin'
+require_relative '../common/service'
+
+
+def main(opts)
+    # Set logging to be STDOUT if the log option is not specified
+    log_file = opts[:logfile].empty? ? STDOUT : opts[:logfile]
+
+    # Set the config file to default to 'config.yaml' in the same directory as this file
+    config_file = opts[:config].empty? ? File.expand_path("../config.yaml", __FILE__) : opts[:config]
+
+    # Start the logger and set the level
+    log = Logger.new(log_file)
+    log.level = Logger::DEBUG
+
+    # Control whether to restart the bot upon a shutdown sequence or just quit
+    restart = Chansey::Common::RestartToggleClass.new
+
+    while restart.restart
+        # Load the configuration file
+        config = YAML.load_file(config_file)
+
+        begin
+            EventMachine.run do
+                bot = Chansey::Plugins::Controller.new(log, config, restart)
+            end
+        rescue => e
+            log.fatal "FATAL Uncaught exception: #{e.exception}: #{e.message}\n#{e.backtrace.join("\n")}"
+            sleep(1)
+        end
+    end
+end
 
 opts = Trollop::options do
     opt :logfile, "Log file location", :short => "-l", :default => ""
+    opt :config, "Config file location", :short => "-c", :default => File.expand_path("../config.yaml", __FILE__)
 end
 
-Trollop::die "No plugin specified" if ARGV.empty?
-
-begin
-    EventMachine.run do 
-        # Init logger
-        log_file = opts[:logfile].empty? ? STDOUT : opts[:logfile]
-        log = Logger.new(log_file)
-        log.level = Logger::DEBUG
-
-        # Initialize the wrapper
-        pw = Chansey::PluginWrapper.new(log)
-
-        # Load and instantiate plugin
-        pw.load ARGV[0]
-    end
-rescue => e
-    log.fatal "FATAL Uncaught exception: #{e.exception}: #{e.message}\n#{e.backtrace.join("\n")}"
-end
+main opts

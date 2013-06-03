@@ -1,13 +1,15 @@
 require_relative '../../common/service'
+require_relative 'plugin'
+require_relative 'interface'
 
 module Chansey
     module Plugins
         class Controller < Common::Service
             PLUGIN_DIR = 'plugins'
 
-            def initialize(*args)
+            def initialize(log, config, restart)
                 super
-                @interface = Plugins::Interface.new
+                @interface = Plugins::Interface.new(log, @mq, @exchange)
                 @plugins = {}
 
                 @config['plugins'].each do |p|
@@ -24,8 +26,18 @@ module Chansey
                     return nil
                 end
 
+                name = File.basename(path).downcase
+                if @plugins.key?(name)
+                    @log.warn "A plugin with that name already exists"
+                    return nil
+                end
+
                 # load
-                plugin
+                plugin_module = Module.new
+                plugin_module.module_eval(File.read(path), path)
+                plugin = Plugin.latest_plugin.new(@interface, @log, @config,
+                                                  name, path)
+                @plugins[name] = plugin
             end
 
             def reload_plugin(plugin)

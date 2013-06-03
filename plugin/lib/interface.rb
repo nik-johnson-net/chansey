@@ -1,3 +1,5 @@
+require 'json'
+require 'fiber'
 require_relative '../../common/event'
 require_relative '../../common/string'
 
@@ -26,25 +28,25 @@ module Chansey
 
             def new_plugin(plugin)
                 name = plugin.metadata[:name]
+                @log.debug "Loading new plugin #{name}"
 
                 # Sanity check
-                if @locks[name] || @event_callbacks[name] || @queues[name]
-                    || @rply_queues[name]
+                if @locks[name] or @event_callbacks[name] or @queues[name] or @rply_queues[name]
                     raise ArgumentError, "Plugin is already loaded"
                 end
 
                 @locks[name] = nil
                 @lock_wait[name] = []
-                @event_callbacks[name] = [&plugin.method(:on_event)]
+                @event_callbacks[name] = [plugin.method(:on_event)]
 
                 ## Bind callback queue
-                @rply_queues[name] = add_queue(name, '') do |q|
+                @rply_queues[name] = new_queue(name, '') do |q|
                     q.bind(@exchange, :routing_key => q.name)
                     q.subscribe(&reply_handler_factory(name))
                 end
 
                 # Bind primary queue
-                @queues[name] = add_queue(name, '') do |q|
+                @queues[name] = new_queue(name, '') do |q|
                     q.subscribe(&message_handler_factory(name))
                 end
 
@@ -70,12 +72,8 @@ module Chansey
                 nil
             end
 
-            def add_queue(plugin_name, name, opts={ :auto_delete => true }, &block)
-                raise ArgumentError, "Plugin not loaded" unless @queues[plugin_name]
-
-                new_queue = @channel.queue(name, opts, &block)
-                @queues[plugin_name] << new_queue
-                new_queue
+            def new_queue(plugin_name, name, opts={ :auto_delete => true }, &block)
+                @channel.queue(name, opts, &block)
             end
 
             def add_binding(plugin_name, binding)
