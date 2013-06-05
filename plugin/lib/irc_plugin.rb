@@ -1,8 +1,11 @@
 # encoding: utf-8
+require 'set'
 
 module Chansey
     class Plugin
         module IRCPlugin
+            CHANNEL_PREFIXES = [ '&', '#', '+', '!' ].to_set
+
             # Represents a command request
             class Request
                 attr_reader :channel
@@ -19,8 +22,9 @@ module Chansey
                     @command = command
                     @arg = event['data']['msg']['params'].partition(' ').last
                     
-                    if event['data']['msg']['middle'].first[0].match(/[[:punct:]]/)
-                        @channel = event['data']['msg']['middle'].first
+                    destination = event['data']['msg']['middle'].first
+                    if CHANNEL_PREFIXES.include? destination[0]
+                        @channel = destination
                         @pm = false
                     else
                         @channel = event['data']['msg']['nick']
@@ -29,11 +33,11 @@ module Chansey
                 end
                 alias pm? pm
 
-                def reply_notice(msg)
+                def notice(msg)
                     @plugin.notice(@network, @channel, msg)
                 end
 
-                def reply_privmsg(msg)
+                def privmsg(msg)
                     @plugin.notice(@network, @channel, msg)
                 end
 
@@ -56,8 +60,8 @@ module Chansey
 
             def self.included(mod)
                 mod.initializer do
-                    @_command_map = {}
-                    @command_key = @config['irc']['command_key']
+                    @_irc_command_map = {}
+                    @irc_command_key = @config['irc']['command_key']
                     add_event_callback(&method(:_irc_event))
                     listen_for 'irc.privmsg'
                 end
@@ -66,15 +70,9 @@ module Chansey
             def _irc_event(metadata, event)
                 return unless event['service'] == 'irc'
 
-                cmd = extract_command(event)
-                if cmd and cmd = @_command_map[cmd]
-                    if event['data']['msg']['middle'][0][0] == '#' and cmd.public
-                        @log.debug "Firing public event #{cmd.command}"
-                        cmd.fire(event)
-                    elsif cmd.private
-                        @log.debug "Firing private event #{cmd.command}"
-                        cmd.fire(event)
-                    end
+                cmd = extract_irc_command(event)
+                if cmd && cmd = @_irc_command_map[cmd]
+                    cmd.fire(event)
                 end
             end
 
@@ -171,20 +169,20 @@ module Chansey
 
             private
             def irc_command(trigger, opts={}, &block)
-                return nil unless @_command_map[trigger].nil?
+                return nil unless @_irc_command_map[trigger].nil?
 
-                cmd = Command.new(trigger, self, opts, &block)
-                @_command_map[trigger] = cmd;
+                cmd = Command.new(@log, trigger, self, opts, &block)
+                @_irc_command_map[trigger] = cmd;
             end
 
-            def extract_command(event)
+            def extract_irc_command(event)
                 return nil unless event['event'] == 'privmsg'
                 return nil unless event['data']['msg']['command'] == 'privmsg'
 
                 line = event['data']['msg']['params']
-                first_word = line.split.shift
-                if first_word.start_with? @command_key
-                    return first_word[@command_key.length..-1]
+                first_word = line.partition(' ').first
+                if first_word.start_with? @irc_command_key
+                    return first_word[@irc_command_key.length..-1]
                 else
                     return nil
                 end
@@ -195,12 +193,13 @@ module Chansey
                 attr_reader :public
                 attr_reader :private
 
-                def initialize(command, plugin, opts={}, &block)
+                def initialize(log, command, plugin, opts={}, &block)
                     opts.default!({
                         :pub => true,
                         :priv => false
                     })
 
+                    @log = log
                     @command = command
                     @action = block
                     @public = opts[:pub]
@@ -210,7 +209,10 @@ module Chansey
 
                 def fire(event)
                     request = IRCPlugin::Request.new(@command, event, @plugin)
-                    @action.call( request )
+                    if (request.pm? && @private) || (!request.pm? && @public)
+                        @log.debug "Calling command #{@command} (pm: #{request.pm?})"
+                        @action.call( request )
+                    end
                 end
             end # Command
         end # IRCPlugin

@@ -224,7 +224,7 @@ module Chansey
                             end
                         end
 
-                        next_fiber = @lock_wait[plugin_name].first
+                        next_fiber = @lock_wait[plugin_name].shift
                         unless next_fiber.nil?
                             @log.debug "#{plugin_name} resuming lock-waiting fiber #{next_fiber[:fiber]}"
                             next_fiber[:fiber].resume *next_fiber[:args]
