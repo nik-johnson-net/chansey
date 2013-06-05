@@ -3,6 +3,57 @@
 module Chansey
     class Plugin
         module IRCPlugin
+            # Represents a command request
+            class Request
+                attr_reader :channel
+                attr_reader :network
+                attr_reader :command
+                attr_reader :event
+                attr_reader :arg
+                attr_reader :pm
+
+                def initialize(command, event, plugin)
+                    @plugin = plugin
+                    @event = event
+                    @network = event['data']['network']
+                    @command = command
+                    @arg = event['data']['msg']['params'].partition(' ').last
+                    
+                    if event['data']['msg']['middle'].first[0].match(/[[:punct:]]/)
+                        @channel = event['data']['msg']['middle'].first
+                        @pm = false
+                    else
+                        @channel = event['data']['msg']['nick']
+                        @pm = true
+                    end
+                end
+                alias pm? pm
+
+                def reply_notice(msg)
+                    @plugin.notice(@network, @channel, msg)
+                end
+
+                def reply_privmsg(msg)
+                    @plugin.notice(@network, @channel, msg)
+                end
+
+                def leave_channel(msg=nil)
+                    @plugin.part(@network, @channel, msg)
+                end
+
+                def change_nick(nick)
+                    @plugin.nick(@network, nick)
+                end
+
+                def quit_network(msg=nil)
+                    @plugin.quit(@network, msg)
+                end
+
+                def change_topic(topic)
+                    @plugin.topic(@network, @channel, topic)
+                end
+            end # request
+
             def self.included(mod)
                 mod.initializer do
                     @_command_map = {}
@@ -119,10 +170,10 @@ module Chansey
             end
 
             private
-            def command(trigger, opts={}, &block)
+            def irc_command(trigger, opts={}, &block)
                 return nil unless @_command_map[trigger].nil?
 
-                cmd = Command.new(trigger, opts, &block)
+                cmd = Command.new(trigger, self, opts, &block)
                 @_command_map[trigger] = cmd;
             end
 
@@ -138,40 +189,45 @@ module Chansey
                     return nil
                 end
             end
-        end
-    end
-end
 
-class Chansey::Plugin::IRCPlugin::Command
-    attr_reader :command
-    attr_reader :public
-    attr_reader :private
+            class Command
+                attr_reader :command
+                attr_reader :public
+                attr_reader :private
 
-    def initialize(command, opts={}, &block)
-        opts.default!({
-            :pub => true,
-            :priv => false
-        })
+                def initialize(command, plugin, opts={}, &block)
+                    opts.default!({
+                        :pub => true,
+                        :priv => false
+                    })
 
-        @command = command
-        @action = block
-        @public = opts[:pub]
-        @private = opts[:priv]
-    end
+                    @command = command
+                    @action = block
+                    @public = opts[:pub]
+                    @private = opts[:priv]
+                    @plugin = plugin
+                end
 
-    def fire(event)
-        if event['data']['msg']['middle'].first[0].match(/[[:punct:]]/)
-            destination = event['data']['msg']['middle'].first
-            pm = false
-        else
-            destination = event['data']['msg']['nick']
-            pm = true
-        end
+                def fire(event)
+                    if event['data']['msg']['middle'].first[0].match(/[[:punct:]]/)
+                        channel = event['data']['msg']['middle'].first
+                        pm = false
+                    else
+                        channel = event['data']['msg']['nick']
+                        pm = true
+                    end
 
-        # Signature: msg, reply_to, pm, amqp_payload
-        @action.call( event['data']['msg'], destination, pm, event )
-    end
-end
+                    network = event['data']['network']
+                    msg = event['data']['msg']
+
+                    request = IRCPlugin::Request.new(@command, event, @plugin)
+
+                    @action.call( request )
+                end
+            end # Command
+        end # IRCPlugin
+    end # plugin
+end # chansey
 
 class Hash
     def default!(defaults={})
