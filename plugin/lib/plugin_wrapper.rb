@@ -2,6 +2,9 @@ require_relative '../../common/service'
 require_relative 'plugin'
 require_relative 'interface'
 
+# Mixins
+require_relative 'irc_plugin'
+
 module Chansey
     module Plugins
         class Controller < Common::Service

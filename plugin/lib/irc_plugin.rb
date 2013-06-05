@@ -4,7 +4,7 @@ module Chansey
     class Plugin
         module IRCPlugin
             def self.included(mod)
-                @@initializers << Proc.new do
+                mod.initializer do
                     @_command_map = {}
                     @command_key = @config['irc']['command_key']
                     add_event_callback(&method(:_irc_event))

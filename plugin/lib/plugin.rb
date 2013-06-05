@@ -4,7 +4,7 @@ module Chansey
     class Plugin
         attr_reader :metadata
 
-        @@initializers = []
+        @initializers = []
 
         # Override new so superclasses don't have to call super.
         def self.new(interface, log, config, name, file, other_meta={})
@@ -21,7 +21,7 @@ module Chansey
 
                 interface.new_plugin(self)
 
-                @@initializers.each do |block|
+                self.class.initializers.each do |block|
                     self.instance_eval(&block)
                 end
 
@@ -30,10 +30,21 @@ module Chansey
             end
         end
 
+        def self.initializers
+            @initializers
+        end
+
+        def self.initializer(&block)
+            @initializers << block
+        end
+
         # detect inherited
         def self.inherited(subclass)
-            puts "Latest inherited set to #{subclass}"
             @@latest_inherited = subclass
+
+            subclass.class_eval do
+                @initializers = []
+            end
         end
 
         def self.latest_plugin

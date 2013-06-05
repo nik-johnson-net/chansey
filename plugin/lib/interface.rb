@@ -54,6 +54,8 @@ module Chansey
             end
 
             def unload_plugin(plugin_name)
+                @log.info "Unloading plugin #{plugin_name}"
+
                 # Unbind queues
                 remove_binding(plugin_name)
                 @rply_queues[plugin_name].unbind(@exchange)
@@ -68,22 +70,27 @@ module Chansey
             end
 
             def new_queue(plugin_name, name, opts={ :auto_delete => true }, &block)
+                @log.debug "Creating queue #{name} for #{plugin_name}"
                 @channel.queue(name, opts, &block)
             end
 
             def add_binding(plugin_name, binding)
+                @log.debug "add_binding for #{plugin_name}: #{binding}"
                 @queues[plugin_name].bind(@exchange, :routing_key => binding)
             end
 
             def remove_binding(plugin_name, binding=nil)
+                @log.debug "remove_binding for #{plugin_name}: #{binding}"
                 @queues[plugin_name].unbind(@exchange, :routing_key => binding)
             end
 
             def capture_lock(plugin_name)
                 if @locks[plugin_name]
                     @lock_wait[plugin_name] << Fiber.current
+                    @log.debug "#{plugin_name} locks list appended by #{Fiber.current}"
                     Fiber.yield
                 else
+                    @log.debug "#{plugin_name} lock captured by #{Fiber.current}"
                     @locks[plugin_name] = Fiber.current
                 end
             end
@@ -93,6 +100,7 @@ module Chansey
                     raise "Attempted to release another fiber's lock"
                 end
 
+                @log.debug "#{plugin_name} lock released"
                 @locks[plugin_name] = nil
             end
 
@@ -120,19 +128,26 @@ module Chansey
                     :fiber => Fiber.current,
                     :timer => timer
                 }
+
+                @log.debug "#{plugin_name} made rpc call from fiber #{Fiber.current}"
+                Fiber.yield
             end
 
             def add_event_callback(plugin_name, &method)
+                @log.debug "#{plugin_name} added an event_callback"
                 @event_callbacks[plugin_name] << method
             end
 
             def sync_deferrable(plugin_name, deferrable)
+                @log.debug "#{plugin_name} made sync_deferrable call from fiber #{Fiber.current}"
                 fiber = Fiber.current
 
                 deferrable.callback do |*args|
                     if @locks[plugin_name].nil? or @locks[plugin_name] == fiber
+                        @log.debug "#{plugin_name} sync_deferrable callback resuming fiber #{fiber}"
                         fiber.resume(true, *args)
                     else
+                        @log.debug "#{plugin_name} sync_deferrable callback delaying fiber #{fiber} due to lock"
                         @lock_wait[plugin_name] << {
                             :fiber => fiber,
                             :args => [true, *args]
@@ -142,8 +157,10 @@ module Chansey
 
                 deferrable.errback do |*args|
                     if @locks[plugin_name].nil? or @locks[plugin_name] == fiber
+                        @log.debug "#{plugin_name} sync_deferrable errback resuming fiber #{fiber}"
                         fiber.resume(false, *args)
                     else
+                        @log.debug "#{plugin_name} sync_deferrable errback delaying fiber #{fiber} due to lock"
                         @lock_wait[plugin_name] << {
                             :fiber => fiber,
                             :args => [false, *args]
@@ -174,12 +191,14 @@ module Chansey
 
                     @fiber_reply_map.delete payload['id']
 
+                    fiber[:timer].cancel
                     if @locks[plugin_name].nil? or @locks[plugin_name] == fiber[:fiber]
-                        fiber[:timer].cancel
+                        @log.debug "#{plugin_name} reply resuming fiber #{fiber[:fiber]}"
                         fiber[:fiber].resume payload
                     else
+                        @log.debug "#{plugin_name} reply delaying fiber #{fiber[:fiber]} due to lock"
                         @lock_wait[plugin_name] << {
-                            :fiber => fiber,
+                            :fiber => fiber[:fiber],
                             :args => [payload]
                         }
                     end
@@ -207,16 +226,20 @@ module Chansey
 
                         next_fiber = @lock_wait[plugin_name].first
                         unless next_fiber.nil?
+                            @log.debug "#{plugin_name} resuming lock-waiting fiber #{next_fiber[:fiber]}"
                             next_fiber[:fiber].resume *next_fiber[:args]
                         end
+                        @log.debug "#{plugin_name} finished fiber #{Fiber.current}"
                     end
 
                     if @locks[plugin_name]
+                        @log.debug "#{plugin_name} delaying new fiber #{fiber} due to lock"
                         @lock_wait[plugin_name] << {
                             :fiber => fiber,
                             :args => [meta, payload]
                         }
                     else
+                        @log.debug "#{plugin_name} resuming new fiber #{fiber}"
                         fiber.resume meta, payload
                     end
                 end
@@ -227,6 +250,7 @@ module Chansey
                     @log.warn "RPC call id #{id} timed out"
                     fiber = @fiber_reply_map[id]
                     @fiber_reply_map.delete id
+                    @log.debug "#{id} rpc timeout for fiber #{fiber[:fiber]}"
 
                     fiber[:fiber].resume false, "Request timed out"
                 end
