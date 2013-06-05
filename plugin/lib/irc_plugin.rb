@@ -209,19 +209,7 @@ module Chansey
                 end
 
                 def fire(event)
-                    if event['data']['msg']['middle'].first[0].match(/[[:punct:]]/)
-                        channel = event['data']['msg']['middle'].first
-                        pm = false
-                    else
-                        channel = event['data']['msg']['nick']
-                        pm = true
-                    end
-
-                    network = event['data']['network']
-                    msg = event['data']['msg']
-
                     request = IRCPlugin::Request.new(@command, event, @plugin)
-
                     @action.call( request )
                 end
             end # Command
