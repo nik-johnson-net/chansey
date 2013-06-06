@@ -8,7 +8,7 @@ require_relative 'irc_plugin'
 module Chansey
     module Plugins
         class Controller < Common::Service
-            PLUGIN_DIR = 'plugins'
+            PLUGIN_DIR = File.expand_path('../../plugins', __FILE__)
 
             def initialize(log, config, restart)
                 super
