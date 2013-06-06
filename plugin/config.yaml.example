@@ -1,0 +1,11 @@
+amqp:
+    exchange: 'chansey'
+
+service_name: 'plugin1'
+
+plugins:
+    - 'irc_default.rb'
+    - 'mc_query.rb'
+
+irc:
+    command_key: '.'
