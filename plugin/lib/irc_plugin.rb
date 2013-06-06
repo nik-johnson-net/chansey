@@ -99,7 +99,7 @@ module Chansey
                 })
             end
 
-            def join(network, channels)
+            def join(network, *channels)
                 mapping = {}
                 channels.each { |x|
                     mapping[x] = ''

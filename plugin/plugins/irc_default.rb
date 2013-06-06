@@ -11,5 +11,9 @@ class DefaultIRCPlugin < Chansey::Plugin
         irc_command 'source' do |req|
             req.say("#{req.nick}: #{SOURCE_LINK}")
         end
+
+        irc_command 'join' do |req|
+            join(req.network, req.arg.partition(' ').first)
+        end
     end
 end
