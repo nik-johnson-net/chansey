@@ -44,13 +44,20 @@ class MCQuery < Chansey::Plugin
 
         # Verify params are present
         unless params.length.between?(1,2)
-            request.privmsg("Usage: <hostname> [port]")
+            request.notice("Usage: <hostname> [port]")
             return
         end
 
 
         # Get basic query info
-        bool, result = mc_query(*params)
+        bool, result = [nil, nil]
+        begin
+            bool, result = mc_query(*params)
+        rescue EventMachine::ConnectionError => e
+            request.notice("#{params.first}: #{e.message}")
+            return
+        end
+
         unless bool
             result ||= "Could not query the minecraft server."
             request.notice("#{params.first}: #{result}")
@@ -67,14 +74,20 @@ class MCQuery < Chansey::Plugin
         }
 
         # Add player list if available
-        bool, result = ut3_query(*params)
+        begin
+            bool, result = ut3_query(*params)
+        rescue EventMachine::ConnectionError => e
+            request.notice("#{params.first}: #{e.message}")
+            return
+        end
+
         if bool
             result_string += " - Players: #{result.players.join(', ')}"
         end
 
         request.notice(result_string)
     end
-    
+
     private
     # Uses the Server List query packet
     def mc_query(hostname, port='25565')
