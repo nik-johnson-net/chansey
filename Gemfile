@@ -4,4 +4,6 @@ gem 'amqp', "~> 1.0"
 gem 'eventmachine', '~> 1.0'
 gem 'em-http-request', '~> 1.0'
 gem 'em-imap', '~> 0.4'
-gem 'tweetstream', '~. 2.5'
+gem 'tweetstream', '~> 2.5'
+gem 'em-shorturl', '~> 0.1'
+gem 'nokogiri'
