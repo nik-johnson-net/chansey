@@ -18,8 +18,11 @@ module Chansey
                 }
 
                 @metadata.merge!(other_meta)
+                @_event_handlers = {}
 
                 interface.new_plugin(self)
+
+                add_event_callback(&method(:_event_handler))
 
                 self.class.initializers.each do |block|
                     self.instance_eval(&block)
@@ -92,6 +95,21 @@ module Chansey
 
         def add_event_callback(&block)
             @interface.add_event_callback(@metadata[:name], &block)
+        end
+
+        def handle_event(event, &block)
+            event = "chansey.event.#{event}"
+            @_event_handlers[event] = [] if @_event_handlers[event].nil?
+            @_event_handlers[event] << block
+        end
+
+        def _event_handler(metadata, payload)
+            runners = @_event_handlers[metadata.routing_key]
+            if runners
+                runners.each do |p|
+                    p.call(payload)
+                end
+            end
         end
     end
 end
