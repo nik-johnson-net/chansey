@@ -11,6 +11,10 @@ module Chansey
                 attr_reader :channel
                 attr_reader :network
                 attr_reader :command
+                attr_reader :nick
+                attr_reader :user
+                attr_reader :host
+                attr_reader :middle
                 attr_reader :event
                 attr_reader :arg
                 attr_reader :pm
@@ -21,13 +25,17 @@ module Chansey
                     @network = event['data']['network']
                     @command = command
                     @arg = event['data']['msg']['params'].partition(' ').last
+                    @nick = event['data']['msg']['nick']
+                    @user = event['data']['msg']['user']
+                    @host = event['data']['msg']['host']
+                    @middle = event['data']['msg']['middle']
                     
-                    destination = event['data']['msg']['middle'].first
+                    destination = @middle.first
                     if CHANNEL_PREFIXES.include? destination[0]
                         @channel = destination
                         @pm = false
                     else
-                        @channel = event['data']['msg']['nick']
+                        @channel = @nick
                         @pm = true
                     end
                 end
