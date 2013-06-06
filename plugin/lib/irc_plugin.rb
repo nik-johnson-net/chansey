@@ -45,8 +45,8 @@ module Chansey
                     @plugin.notice(@network, @channel, msg)
                 end
 
-                def privmsg(msg)
-                    @plugin.notice(@network, @channel, msg)
+                def say(msg)
+                    @plugin.privmsg(@network, @channel, msg)
                 end
 
                 def leave_channel(msg=nil)

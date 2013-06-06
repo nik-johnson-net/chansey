@@ -5,11 +5,11 @@ class DefaultIRCPlugin < Chansey::Plugin
 
     def initialize
         irc_command 'botsnack' do |req|
-            req.privmsg(SMILIES.sample)
+            req.say(SMILIES.sample)
         end
 
         irc_command 'source' do |req|
-            req.privmsg("#{req.nick}: #{SOURCE_LINK}")
+            req.say("#{req.nick}: #{SOURCE_LINK}")
         end
     end
 end
