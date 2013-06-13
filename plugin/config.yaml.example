@@ -9,3 +9,11 @@ plugins:
 
 irc:
     command_key: '.'
+
+mumble:
+    ice_query_exec: '/home/user/murmur-ice-query/bin.py'
+    ice:
+        ip: '127.0.0.1'
+        port: '6502'
+    address: 'example.com'
+    port: '64738'
