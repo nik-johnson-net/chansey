@@ -1,3 +1,4 @@
+require_relative '../../common/string'
 require_relative 'account.rb'
 require_relative '../../common/service'
 
@@ -16,7 +17,7 @@ module Chansey
                         config['server'],
                         config['port'],
                         config['ssl'],
-                        &method(:generate_event)
+                        &method(:on_new_email)
                     )
                     new_account.login( config['password'] ) do
                         new_account.handle_unread_emails do |*args|
@@ -37,7 +38,10 @@ module Chansey
                     :subject => subject,
                     :body => body
                 }
-                @egen.event('email.new', body)
+                event = @egen.event('new', data)
+                route = "chansey.event.#{@config['service_name'].amqp_safe}.#{event[:event]}"
+                @exchange.publish(event.to_json, :routing_key => route)
+                @log.debug "Published #{event} to #{route}"
             end # End on_new_email
         end # End controller
     end # End Email
