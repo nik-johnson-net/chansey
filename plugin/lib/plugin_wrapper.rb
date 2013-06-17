@@ -14,16 +14,17 @@ module Chansey
                 super
                 @interface = Plugins::Interface.new(log, @mq, @exchange)
                 @plugins = {}
+                @plugin_dir = @config['plugin_directory'] || PLUGIN_DIR
 
                 @config['plugins'].each do |p|
-                    # If its an alone filename, prepend with the plugin dir
-                    p = File.join(PLUGIN_DIR, p) if File.basename(p) == p
-
                     load_plugin(p)
                 end
             end
 
-            def load_plugin(path)
+            def load_plugin(path, other_meta={})
+                # If its an alone filename, prepend with the plugin dir
+                path = File.join(@plugin_dir, path) if File.basename(path) == path
+
                 unless File.readable?(path)
                     @log.warn "Can not read plugin #{File.absolute_path(path)}"
                     return nil
@@ -39,7 +40,7 @@ module Chansey
                 plugin_module = Module.new
                 plugin_module.module_eval(File.read(path), path)
                 plugin = Plugin.latest_plugin.new(@interface, @log, @config,
-                                                  name, path)
+                                                  name, path, other_meta)
                 @plugins[name] = plugin
             end
 
