@@ -15,5 +15,11 @@ class DefaultIRCPlugin < Chansey::Plugin
         irc_command 'join' do |req|
             join(req.network, req.arg.partition(' ').first)
         end
+
+        listen_for 'irc.invite'
+        handle_event 'irc.invite' do |event|
+            invited_channel = event['data']['msg']['params']
+            join(event['data']['network'], invited_channel)
+        end
     end
 end

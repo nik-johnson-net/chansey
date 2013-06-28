@@ -204,7 +204,7 @@ module Chansey
                 def initialize(log, command, plugin, opts={}, &block)
                     opts.default!({
                         :pub => true,
-                        :priv => false
+                        :priv => true 
                     })
 
                     @log = log
