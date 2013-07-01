@@ -4,7 +4,14 @@ class DefaultIRCPlugin < Chansey::Plugin
     BOT_TEMPLATE = "%{name} - Owner: %{owner} - Command Prefix: %{prefix}"
 
     def initialize
-        @bots = @config['bots']
+        @bots = @config['bots'].dup
+        @bots.each do |network,channels|
+            channels.each do |channel,bots|
+                bots.map! do |bot|
+                    bot.keys_to_sym
+                end
+            end
+        end
 
         irc_command 'bots' do |req|
             req.notice("Bots for #{req.channel}:")
