@@ -1,7 +1,7 @@
 class DefaultIRCPlugin < Chansey::Plugin
     include IRCPlugin
 
-    BOT_TEMPLATE = "%{name} - Owner: %{owner} - Command Prefix: %{prefix}"
+    BOT_TEMPLATE = "%-16{name} | Owner: %-16{owner} | Command Prefix: %{prefix}"
 
     def initialize
         @bots = @config['bots'].dup
