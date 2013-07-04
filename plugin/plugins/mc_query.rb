@@ -211,7 +211,7 @@ end
 
 module MinecraftPing
     def self.open(server, port='25565')
-        EM.connect(server, port, Connection)
+        EM.connect(server, port, Connection, server, port)
     end
 
     class Query
@@ -236,6 +236,12 @@ module MinecraftPing
 
     class Connection < EM::Connection
         RESPONSE_TIMEOUT = 5
+
+        def initialize(s, p)
+            @server = s
+            @port = p
+        end
+
         def query
             d = EM::DefaultDeferrable.new
             d.timeout(RESPONSE_TIMEOUT)
@@ -244,8 +250,12 @@ module MinecraftPing
                 d.fail "Query already pending"
             else
                 @pending_query = d
-                query = [0xFE, 0x01].pack('CC')
-                send_data(query)
+                # Query_1 is the 1.4-1.5 style ping. Majong Broke the fuck out
+                # of the 1.6 server responses to this, forcing us to always
+                # send the new, more complicated pings.
+                query_1 = [0xFE, 0x01].pack('CC')
+                query_2 = generate_new_query_part
+                send_data(query_1 + query_2)
             end
 
             d
@@ -264,6 +274,29 @@ module MinecraftPing
                 @pending_query = nil
                 d.fail 'Connection suddenly closed'
             end
+        end
+
+        def generate_new_query_part
+            # Packet ID and constant string
+            query = [0xFA, 0xB].pack('Cs>')
+            query += ["MC|PingHost".encode('UTF-16BE')].pack('a*')
+
+            # Compute length of query data
+            query += [ 7 + 2*@server.length ].pack('s>')
+
+            # Proto version
+            query += [ 73 ].pack('C')
+
+            # Length of hostname
+            query += [ @server.length ].pack('s>')
+
+            # Hostname
+            query += [ @server.encode('UTF-16BE')].pack('a*')
+
+            # Port
+            query += [ @port.to_i ].pack('l>')
+
+            query
         end
     end
 end
