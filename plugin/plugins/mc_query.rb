@@ -58,9 +58,14 @@ class MCQuery < Chansey::Plugin
             return
         end
 
-        unless bool
+        if !bool
             result ||= "Could not query the minecraft server."
             request.notice("#{params.first}: #{result}")
+            return
+        end
+
+        if !result.players || !result.max_players || !result.version || !result.motd
+            request.notice("#{params.first}: Missing parameter from server ping. Is the server broke?")
             return
         end
 
