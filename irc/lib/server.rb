@@ -119,7 +119,7 @@ class Chansey::IRC::Server < EventMachine::Connection
     def reset_timeout_timer
         @pingtimer.cancel
         @pingtimer = EM::Timer.new(CONNECTION_TIMEOUT) do
-            @log.info "Disconnecting from #{network.name} due to connection timeout."
+            @log.info "Disconnecting from #{@network.name} due to connection timeout."
             close_connection
         end
     end
