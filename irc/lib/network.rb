@@ -99,6 +99,8 @@ class Chansey::IRC::Network
         @server = nil
         @bot.network_disconnected(self)
 
+        @timer.cancel if @timer
+
         # If we didn't want to disconnect (didn't send QUIT)
         # then reconnect.
         unless @disconnect
