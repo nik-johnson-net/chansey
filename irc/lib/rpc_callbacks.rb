@@ -6,6 +6,41 @@ module Chansey
                 @controller.restart(*reason)
             end
 
+            def on_networkcreate(request)
+                params = {
+                    'name' => String,
+                    'auto' => Boolean,
+                    'servers' => Array,
+                    'nick' => Array,
+                    'fullname' => String,
+                    'channels' => Array
+                }
+                return if !verify_params(request, params)
+                if !@controller.new_network(request.opts('name'))
+                    request.failure(:reason => 'Network exists')
+                else
+                    net = @controller.networks[request.opts('name')]
+                    net.connect
+                    request.success
+                end
+            end
+
+            def on_networkjoin(request)
+                params = {
+                    'name' => String
+                }
+                return if !verify_params(request, params)
+                net = @controller.networks[request.opts('name')]
+                if net.nil?
+                    request.failure(:reason => 'Network does not exist')
+                elsif net.server
+                    request.failure(:reason => 'Already connected')
+                else
+                    net.connect
+                end
+            end
+
+
             def on_raw(request)
                 params = {
                     'network' => String,

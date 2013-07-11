@@ -32,7 +32,9 @@ module Chansey
                 # Create network instances
                 @log.debug "Bot initializing, creating networks"
                 @config["networks"].each do |config|
-                    @networks[config["name"]] = IRC::Network.new(self, config)
+                    if !new_network(config)
+                        @log.warn "Attempted to create a network that already exists (#{config['name']})"
+                    end
                 end
 
                 # Connect to the autoload networks
@@ -43,6 +45,14 @@ module Chansey
             end
 
 
+            def new_network(config)
+                if @networks.key? config['name']
+                    return false
+                else
+                    @networks[config['name']] = IRC::Network.new(self, config)
+                    return true
+                end
+            end
             ##
             # This method is called by underlying network objects in order to move
             # events up the chain of command so that the bot may broadcast events
