@@ -3,7 +3,7 @@
 class TwitterIRCBridge < Chansey::Plugin
     include IRCPlugin
 
-    TWEET_TEMPLATE = "[twitter] %{user}: %{body}"
+    TWEET_TEMPLATE = "[twitter] @%{user}: %{body}"
 
     def initialize
         listen_for 'twitter.tweet'
