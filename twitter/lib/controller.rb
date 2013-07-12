@@ -31,7 +31,11 @@ module Chansey
                     :retweet => status.retweet?
                 }
 
-                @egen.event('tweet', data)
+                event = @egen.event('tweet', data)
+                route = "chansey.event.#{@config['service_name'].amqp_safe}.tweet"
+
+                @exchange.publish(event.to_json, :routing_key => route)
+                @log.debug "Pushed event to exchange: #{event}"
             end
 
             private
