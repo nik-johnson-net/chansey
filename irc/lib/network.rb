@@ -128,14 +128,38 @@ class Chansey::IRC::Network
         @server = EM.connect(hostname, port, Chansey::IRC::Server, self)
     end
 
+
+    ##
+    # Called when the underlying server fears a timeout. Causes the network
+    # to send a ping to the server to check if it is still connected. After
+    # 5 seconds, will disconnect the server and trigger a reconnect attempt.
+
+    def ping_network
+        @ping_timeout.cancel if @ping_timeout
+        ping("helloareyoustillthere?")
+
+        @ping_timeout = EM::Timer.new(5) do
+            @server.close_connection
+        end
+    end
+
     private
 
 
     ##
-    # Responds to pings
+    # Responds to pings by sending the proper PONG
 
     def on_ping(message)
         pong( message[:params] )
+    end
+
+
+    ##
+    # A response for a ping we sent. Cancels a pending ping timeout if one
+    # exists.
+
+    def on_pong(message)
+        @ping_timeout.cancel if @ping_timeout
     end
 
     

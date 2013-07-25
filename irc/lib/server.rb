@@ -26,11 +26,8 @@ class Chansey::IRC::Server < EventMachine::Connection
 
 		@network = network
 		@bot = network.bot
-        @pingtimer = EM::Timer.new(CONNECTION_TIMEOUT) do
-            @bot.log.info "Disconnecting from #{network.name} due to connection timeout."
-            close_connection
-        end
-	end
+        @pingtimer = create_periodic_timer
+    end
 
 
     ##
@@ -116,11 +113,27 @@ class Chansey::IRC::Server < EventMachine::Connection
 		return parsed_lines
 	end
 
+
+    ##
+    # Resets the timeout timer by cancelling it and recreating it.
+
     def reset_timeout_timer
         @pingtimer.cancel
-        @pingtimer = EM::Timer.new(CONNECTION_TIMEOUT) do
-            @bot.log.info "Disconnecting from #{@network.name} due to connection timeout."
-            close_connection
+        @pingtimer = create_periodic_timer
+    end
+
+    private
+
+    ##
+    # Creates a periodic timer to actively PING the server every
+    # CONNECTION_TIMEOUT seconds in order to detect some forms of
+    # disconnectivity. The function of pinging the server is handled at the
+    # network level.
+
+    def create_periodic_timer
+        EM::PeriodicTimer.new(CONNECTION_TIMEOUT) do
+            @bot.log.info("Pinging server due to possible timeout: #{@network.name}")
+            @network.ping_network
         end
     end
 end

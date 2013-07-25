@@ -33,6 +33,13 @@ module Chansey
 
 
             ##
+            # Sends a PING message
+
+            def ping(identifier)
+                raw("PING :#{identifier}")
+            end
+
+            ##
             # Sends a PONG message
 
             def pong(data)
