@@ -42,6 +42,20 @@ module Chansey
                 @networks.each do |n,v|
                     v.connect if v.auto_connect?
                 end
+
+
+                # Periodic timer for trapping signals
+                EM.add_periodic_timer(2) do
+                    case @trapped_signal
+
+                    # SIGTERM, SIGINT
+                    when 2, 15
+                        stop("Quitting by system request.")
+
+                    # SIGHUP
+                    when 1
+                    end
+                end
             end
 
 
@@ -92,7 +106,7 @@ module Chansey
 
                 @quit = true
                 @networks.each do |k,v|
-                    v.quit(reason)
+                    v.quit(reason) if v.server
                 end
             end
 
@@ -106,19 +120,18 @@ module Chansey
                 @quit = true
                 @restart.restart = false if @restart
                 @networks.each do |k,v|
-                    v.quit(reason)
+                    v.quit(reason) if v.server
                 end
             end
 
             private
 
+
             ##
             # The SIGINT handler. Sends QUIT to all networks.
 
-            def signal_int(*args)
-                @log.info "Caught SIGINT"
-
-                stop("Caught SIGINT")
+            def signal_trap(signo)
+                @trapped_signal = signo
             end
         end
     end
