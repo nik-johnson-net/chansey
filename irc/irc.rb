@@ -35,6 +35,7 @@ def main(opts)
                 # interactions.
                 trap "INT", &bot.method(:signal_trap)
                 trap "TERM", &bot.method(:signal_trap)
+                trap "HUP", &bot.method(:signal_trap)
             end
         rescue => e
             log.fatal "FATAL Uncaught exception: #{e.exception}: #{e.message}\n#{e.backtrace.join("\n")}"

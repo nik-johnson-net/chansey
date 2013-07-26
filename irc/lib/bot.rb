@@ -50,10 +50,11 @@ module Chansey
 
                     # SIGTERM, SIGINT
                     when 2, 15
-                        stop("Quitting by system request.")
+                        stop("Quitting by system signal.")
 
                     # SIGHUP
                     when 1
+                        restart("Restarting by SIGHUP.")
                     end
                 end
             end
