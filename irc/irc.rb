@@ -24,10 +24,10 @@ def main(opts)
     restart = Chansey::Common::RestartToggleClass.new
 
     while restart.restart
-        # Load the configuration file
-        config = YAML.load_file(config_file)
-
         begin
+            # Load the configuration file
+            config = YAML.load_file(config_file)
+
             EventMachine.run do
                 bot = Chansey::IRC::Bot.new(log, config, restart)
 
