@@ -7,4 +7,4 @@ gem 'em-imap', '~> 0.4'
 gem 'tweetstream', '~> 2.5'
 gem 'em-shorturl', '~> 0.1'
 gem 'nokogiri'
-gem 'sequel', '~> 3.48'
+gem "em-pg-client", "~> 0.2.1"

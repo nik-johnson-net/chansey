@@ -86,7 +86,7 @@ module Chansey
             ##
             # Called if AMQP Fails to authenticate
 
-            def on_amqp_auth_fail
+            def on_amqp_auth_fail(opts)
                 @log.fatal 'Failed to authenticate with the AMQP server.'
                 @restart.restart = false
                 EM.stop

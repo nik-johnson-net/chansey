@@ -1,0 +1,38 @@
+---
+create_accounts: |
+                   CREATE TABLE IF NOT EXISTS accounts ( id SERIAL PRIMARY KEY, password TEXT );
+
+create_nicks:    |
+                   CREATE TABLE IF NOT EXISTS nicks (
+                     id integer REFERENCES accounts, network TEXT, nick TEXT,
+                     UNIQUE ( network, nick ),
+                     UNIQUE ( id, network )
+                   );
+
+create_perms:    |
+                   CREATE TABLE IF NOT EXISTS permissions (
+                     id integer REFERENCES accounts, permission TEXT, value BOOL,
+                     UNIQUE ( id, permission )
+                   );
+register_user: |
+                 WITH newact AS (
+                    INSERT INTO accounts (password) VALUES ( $1::text ) RETURNING id
+                 )
+                 INSERT INTO nicks SELECT id, $2::text, $3::text FROM newact;
+
+link_user:     |
+                 INSERT INTO nicks
+                   SELECT id, $1::text, $2::text
+                     FROM nicks
+                     WHERE network=$3::text AND nick=$4::text;
+
+delete_nick:   |
+                 DELETE FROM nicks
+                   WHERE network=$1::text AND nick=$2::text;
+
+auth_user:     |
+                 SELECT password FROM accounts NATURAL JOIN nicks
+                   WHERE nicks.network=$1 AND nicks.nick=$2;
+
+user_perms:    |
+                 SELECT permissions FROM 

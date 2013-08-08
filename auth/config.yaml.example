@@ -3,4 +3,9 @@ amqp:
     exchange: 'chansey'
 
 service_name: 'auth'
-database: 'sqlite://file.sqlite'
+
+database:
+    host: 'localhost'
+    port: 5432
+    user: chansey
+    pass: testdb
