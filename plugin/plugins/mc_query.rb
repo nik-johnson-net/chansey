@@ -48,6 +48,8 @@ class MCQuery < Chansey::Plugin
             return
         end
 
+        # Try to get SRV information
+        params = return_srv_or_given(*params)
 
         # Get basic query info
         bool, result = [nil, nil]
@@ -94,6 +96,19 @@ class MCQuery < Chansey::Plugin
     end
 
     private
+    def return_srv_or_given(hostname, port='25565')
+        srv_record = MinecraftSRVQuery.new.resolve(hostname)
+
+        if srv_record.empty?
+            srv_record += [hostname, port]
+        else
+            # Convert the integer port to string
+            srv_record[1] = srv_record[1].to_s
+        end
+
+        srv_record
+    end
+
     # Uses the Server List query packet
     def mc_query(hostname, port='25565')
         mc = MinecraftPing.open(hostname, port)
@@ -112,6 +127,28 @@ class MCQuery < Chansey::Plugin
         ut3.close_connection
 
         result
+    end
+end
+
+## SRV Query
+class MinecraftSRVQuery
+    MINECRAFT_SRV = "_minecraft._tcp"
+    def initialize
+        @resolver = Resolv::DNS.new
+    end
+
+    def resolve(hostname)
+        records = get_srv_records(hostname)
+        return records if records.empty?
+
+        records.sort! { |a,b| a.priority <=> b.priority }
+        [records.first.target.to_s, records.first.port]
+    end
+
+    private
+    def get_srv_records(hostname)
+        target = MINECRAFT_SRV + '.' + hostname
+        @resolver.getresources(target, Resolv::DNS::Resource::IN::SRV)
     end
 end
 
