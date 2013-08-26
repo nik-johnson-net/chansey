@@ -79,7 +79,7 @@ module Chansey
                 return unless event['service'] == 'irc'
 
                 cmd = extract_irc_command(event)
-                if cmd && cmd = @_irc_command_map[cmd]
+                if cmd && cmd = @_irc_command_map[cmd.downcase]
                     cmd.fire(event)
                 end
             end
@@ -177,6 +177,7 @@ module Chansey
 
             private
             def irc_command(trigger, opts={}, &block)
+                trigger.downcase!
                 return nil unless @_irc_command_map[trigger].nil?
 
                 cmd = Command.new(@log, trigger, self, opts, &block)
