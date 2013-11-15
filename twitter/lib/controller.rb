@@ -1,4 +1,5 @@
 require 'tweetstream'
+require 'htmlentities'
 require_relative '../../common/service'
 
 class Hash
@@ -16,6 +17,7 @@ module Chansey
         class Controller < Common::Service
             def initialize(log, config, restart)
                 super
+                @decoder = HTMLEntities.new
                 @twitter = TweetStream::Client.new(config['oauth'].keys_to_sym)
                 @twitter.on_error(&method(:on_error))
                 @twitter.on_reconnect(&method(:on_reconnect))
@@ -27,7 +29,7 @@ module Chansey
                 data = {
                     :user => status.from_user,
                     :userid => status.from_user_id,
-                    :text => status.full_text,
+                    :text => @decoder.decode(status.full_text),
                     :retweet => status.retweet?
                 }
 
