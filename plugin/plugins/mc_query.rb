@@ -80,6 +80,9 @@ class MCQuery < Chansey::Plugin
             :motd        => result.motd.mc_to_irc_colors
         }
 
+        # Return initial results:
+        request.notice(result_string)
+
         # Add player list if available
         begin
             bool, result = ut3_query(*params)
@@ -89,10 +92,8 @@ class MCQuery < Chansey::Plugin
         end
 
         if bool
-            result_string += " - Players: #{result.players.join(', ')}"
+            request.notice("#{params.first}: Players: #{result.players.join(', ')}"
         end
-
-        request.notice(result_string)
     end
 
     private
