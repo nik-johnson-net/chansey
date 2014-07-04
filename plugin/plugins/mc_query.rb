@@ -92,7 +92,7 @@ class MCQuery < Chansey::Plugin
         end
 
         if bool
-            request.notice("#{params.first}: Players: #{result.players.join(', ')}"
+            request.notice("#{params.first}: Players: #{result.players.join(', ')}")
         end
     end
 
