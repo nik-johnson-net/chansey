@@ -37,7 +37,14 @@ module Chansey
 
                 # load
                 plugin_module = Module.new
-                plugin_module.module_eval(File.read(path), path)
+
+                begin
+                  plugin_module.module_eval(File.read(path), path)
+                rescue => e
+                  @log.warn("Plugin #{name} not loaded: #{e}")
+                  return
+                end
+
                 plugin = Plugin.latest_plugin.new(@interface, @log, @config,
                                                   name, path)
                 @plugins[name] = plugin
