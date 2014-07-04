@@ -40,7 +40,7 @@ module Chansey
 
                 begin
                   plugin_module.module_eval(File.read(path), path)
-                rescue => e
+                rescue ScriptError => e
                   @log.warn("Plugin #{name} not loaded: #{e}")
                   return
                 end
