@@ -1,0 +1,6 @@
+irc:
+  cognet:
+    nick: 'chansey2'
+    user: 'chansey2'
+    fullname: 'Chansey v2'
+    servers: ['irc.tamu.edu']

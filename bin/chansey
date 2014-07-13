@@ -24,6 +24,7 @@ def main(opts)
   begin
     EventMachine.run do
       irc_client = Chansey::IRC::Client::Client.new(config['irc'], log)
+      irc_client.connect('cognet')
     end
 
   # NOTE: Yes, this rescues Exception. This is intentional to log all fatals.
