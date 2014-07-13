@@ -1,4 +1,4 @@
-require 'eventmachine/deferrable'
+require 'em/deferrable'
 require 'chansey/irc-client/connection'
 
 module Chansey

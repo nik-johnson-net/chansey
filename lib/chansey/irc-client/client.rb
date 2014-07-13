@@ -1,3 +1,5 @@
+require 'chansey/irc-client/connection_attempter'
+
 module Chansey
   module IRC
     module Client
