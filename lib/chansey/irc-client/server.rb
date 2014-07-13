@@ -5,7 +5,7 @@ module Chansey
         def initialize(connection, config)
           @config = config
           @connection = connection
-          @connection.on_message(&on_method)
+          @connection.on_message(&method(:on_message))
 
           @connection.send_data "NICK #{@config['nick']}"
           @connection.send_data "USER #{@config['user']} 8 * :#{@config['fullname']}"

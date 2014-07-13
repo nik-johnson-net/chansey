@@ -40,8 +40,17 @@ module Chansey
           end
 
           messages.each do |msg|
+            @log.debug "Received: #{msg}"
             run_callbacks(msg)
           end
+        end
+
+        # Override for logging and output pipeline
+        def send_data(data)
+          @log.debug "Sending: #{data}"
+
+          data += "\r\n"
+          super(data)
         end
 
         def on_message(&block)

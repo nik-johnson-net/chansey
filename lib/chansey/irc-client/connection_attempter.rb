@@ -1,5 +1,6 @@
 require 'em/deferrable'
 require 'chansey/irc-client/connection'
+require 'chansey/irc-client/server'
 
 module Chansey
   module IRC
@@ -15,6 +16,8 @@ module Chansey
           @log = log
           @server_counter = 0
           @next_attempt = Time.now
+
+          schedule_attempt
         end
 
         private

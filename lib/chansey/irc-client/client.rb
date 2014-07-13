@@ -16,7 +16,7 @@ module Chansey
           case x = @connections[network]
           when nil
             @log.debug("Starting connection attempt for #{network}")
-            @connections[network] = ConnectionAttempter.new(@config.fetch(network), log)
+            @connections[network] = ConnectionAttempter.new(@config.fetch(network), @log)
           when x.class == ConnectionAttempter
             x
           end
