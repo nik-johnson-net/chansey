@@ -1,6 +1,8 @@
-require 'test/unit'
-require 'chansey/irc-client/connection'
+require 'logger'
 require 'socket'
+require 'test/unit'
+
+require 'chansey/irc-client/connection'
 
 class MockSingleSendServer < EventMachine::Connection
   def initialize(data)
@@ -19,7 +21,7 @@ class ConnectionTest < Test::Unit::TestCase
     EM.run do
       sig = EM.start_server "127.0.0.1", 0, MockSingleSendServer, TEST_STRING
       port = Socket.unpack_sockaddr_in(EM.get_sockname(sig)).first
-      EM.connect("127.0.0.1", port, Chansey::IRC::Client::Connection) do |c|
+      EM.connect("127.0.0.1", port, Chansey::IRC::Client::Connection, {}, Logger.new(nil)) do |c|
         c.on_message do |d|
           assert_equal({
             :nick => 'testnick',

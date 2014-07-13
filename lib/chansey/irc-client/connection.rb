@@ -9,8 +9,10 @@ module Chansey
       class Connection < EventMachine::Connection
         attr_reader :connected
 
-        def initialize
+        def initialize(config, log)
+          @config = config
           @connected = EventMachine::DefaultDeferrable.new
+          @log = log
 
           @inbound_pipeline = [
             LineDecoder.new,
@@ -34,7 +36,7 @@ module Chansey
           begin
             messages = parse(data)
           rescue => e
-            # TODO(njohnson) log it
+            @log.error "Exception parsing data: #{data}\n#{e}\n#{e.backtrace.join("\n")}"
           end
 
           messages.each do |msg|
@@ -58,7 +60,7 @@ module Chansey
             begin
               cb.call(data)
             rescue => e
-              # TODO(njohnson) log it
+              @log.error "Exception running callbacks: #{data}\n#{e}\n#{e.backtrace.join("\n")}"
             end
           end
         end
