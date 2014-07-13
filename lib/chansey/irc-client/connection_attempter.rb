@@ -13,7 +13,6 @@ module Chansey
         def initialize(config)
           @config = config
           @server_counter = 0
-          @connection = nil
           @next_attempt = Time.now
         end
 
@@ -65,19 +64,19 @@ module Chansey
         end
 
         def connect(address, port)
-          d = EventMachine::DefaultDeferrable.new
           EventMachine.connect(address, port, Connection, @config) do |c|
-            c.notify_on_connect(d)
-            @connection = c
+            d = c.connected
+
+            d.callback do
+              succeed Server.new(c, @config)
+            end
+
+            d.errback do
+              schedule_attempt
+            end
           end
 
-          d.callback do
-            succeed Server.new(@connection, @config)
-          end
-
-          d.errback do
-            schedule_attempt
-          end
+          nil
         end
       end
     end

@@ -7,8 +7,10 @@ module Chansey
   module IRC
     module Client
       class Connection < EventMachine::Connection
+        attr_reader :connected
+
         def initialize
-          @connected = :connecting
+          @connected = EventMachine::DefaultDeferrable.new
 
           @inbound_pipeline = [
             LineDecoder.new,
@@ -18,25 +20,14 @@ module Chansey
           @receive_callbacks = []
         end
 
-        def notify_on_connect(deferrable)
-          case @connected
-          when :connecting
-            @on_connects ||= []
-            @on_connects << deferrable
-          when :connected
-            deferrable.succeed
-          when :disconnected
-            deferrable.fail "Already disconnected"
-          end
-          end
-        end
-
         def connection_completed
-          @connected = :connected
+          @connected.cancel_errback
+          @connected.succeed
         end
 
         def unbind
-          @connected = :disconnected
+          @connected.cancel_callback
+          @connected.fail
         end
 
         def receive_data(data)
@@ -65,7 +56,7 @@ module Chansey
         end
 
         def run_callbacks(data)
-          @callbacks.each do |cb|
+          @receive_callbacks.each do |cb|
             begin
               cb.call(msg)
             rescue => e
