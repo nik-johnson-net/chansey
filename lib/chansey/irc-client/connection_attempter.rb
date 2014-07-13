@@ -22,7 +22,7 @@ module Chansey
 
         private
         def schedule_attempt
-          delay = (Time.now - @next_attempt).to_i
+          delay = (@next_attempt - Time.now).to_i
 
           if delay > 0
             @log.debug "Scheduling connection attempt in #{delay} seconds"
