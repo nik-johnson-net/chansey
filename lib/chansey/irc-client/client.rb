@@ -17,24 +17,6 @@ module Chansey
             @connections[network] = ConnectionAttempter.new(@config.fetch(network))
           when x.class == ConnectionAttempter
             x
-          when x.class == Server
-            EventMachine::DefaultDeferrable.new.succeed(x)
-          end
-        end
-
-        def disconnect(network)
-          case x = @connections[network]
-          when nil
-          when x.class == ConnectionAttempter
-          when x.class == Server
-          end
-        end
-
-        def reconnect(network)
-          case x = @connections[network]
-          when nil
-          when x.class == ConnectionAttempter
-          when x.class == Server
           end
         end
       end
