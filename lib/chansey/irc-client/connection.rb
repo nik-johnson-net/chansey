@@ -21,12 +21,10 @@ module Chansey
         end
 
         def connection_completed
-          @connected.cancel_errback
           @connected.succeed
         end
 
         def unbind
-          @connected.cancel_callback
           @connected.fail
         end
 
@@ -58,7 +56,7 @@ module Chansey
         def run_callbacks(data)
           @receive_callbacks.each do |cb|
             begin
-              cb.call(msg)
+              cb.call(data)
             rescue => e
               # TODO(njohnson) log it
             end
