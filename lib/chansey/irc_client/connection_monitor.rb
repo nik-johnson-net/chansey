@@ -78,20 +78,25 @@ module Chansey
 
           connection_complete_deferrable.callback do
             @log.info "Connected to #{address}:#{port}"
-
-            Server.new(c, @config) do |success, server|
-              if success
-                @log.info "Registered to #{address}:#{port}"
-                @connection_deferrable.succeed(server)
-              else
-                @log.error "Registration failed to #{address}:#{port}"
-                schedule_attempt
-              end
-            end
+            handoff(c)
           end
 
           connection_complete_deferrable.errback do
             @log.error "Connection failed to #{address}:#{port}"
+            schedule_attempt
+          end
+        end
+
+        nil
+      end
+
+      def handoff(connection)
+        Server.new(c, @config) do |success, server|
+          if success
+            @log.info "Registered to #{address}:#{port}"
+            @connection_deferrable.succeed(server)
+          else
+            @log.error "Registration failed to #{address}:#{port}"
             schedule_attempt
           end
         end
