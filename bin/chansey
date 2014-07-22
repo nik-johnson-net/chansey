@@ -5,7 +5,7 @@ require 'logger'
 require 'trollop'
 require 'yaml'
 
-require 'chansey/irc-client/client'
+require 'chansey/irc_client/client'
 
 def main(opts)
   # Set logging to be STDOUT if the log option is not specified
@@ -23,7 +23,7 @@ def main(opts)
 
   begin
     EventMachine.run do
-      irc_client = Chansey::IRC::Client::Client.new(config['irc'], log)
+      irc_client = Chansey::IrcClient::Client.new(config['irc'], log)
       irc_client.connect('cognet')
     end
 

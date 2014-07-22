@@ -1,9 +1,9 @@
 require 'test/unit'
-require 'chansey/irc-client/irc_decoder'
+require 'chansey/irc_client/irc_decoder'
 
 class IrcDecoderTest < Test::Unit::TestCase
   def setup
-    @decoder = Chansey::IRC::Client::IrcDecoder.new
+    @decoder = Chansey::IrcClient::IrcDecoder.new
   end
 
   def test_decode_privmsg

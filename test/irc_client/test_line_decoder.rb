@@ -1,9 +1,9 @@
 require 'test/unit'
-require 'chansey/irc-client/line_decoder'
+require 'chansey/irc_client/line_decoder'
 
 class LineDecoderTest < Test::Unit::TestCase
   def setup
-    @decoder = Chansey::IRC::Client::LineDecoder.new
+    @decoder = Chansey::IrcClient::LineDecoder.new
   end
 
   def test_return_type
