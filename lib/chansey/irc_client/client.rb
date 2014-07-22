@@ -1,4 +1,4 @@
-require 'chansey/irc_client/connection_attempter'
+require 'chansey/irc_client/connection_monitor'
 
 module Chansey
   module IrcClient
@@ -15,8 +15,8 @@ module Chansey
         case x = @connections[network]
         when nil
           @log.debug("Starting connection attempt for #{network}")
-          @connections[network] = ConnectionAttempter.new(@config.fetch(network), @log)
-        when x.class == ConnectionAttempter
+          @connections[network] = ConnectionMonitor.new(@config.fetch(network), @log)
+        when x.class == ConnectionMonitor
           x
         end
       end

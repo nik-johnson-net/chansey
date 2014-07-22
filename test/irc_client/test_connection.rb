@@ -22,7 +22,7 @@ class ConnectionTest < Test::Unit::TestCase
       sig = EM.start_server "127.0.0.1", 0, MockSingleSendServer, TEST_STRING
       port = Socket.unpack_sockaddr_in(EM.get_sockname(sig)).first
       EM.connect("127.0.0.1", port, Chansey::IrcClient::Connection, {}, Logger.new(nil)) do |c|
-        c.on_message do |d|
+        c.handler  = lambda do |d,conn|
           assert_equal({
             :nick => 'testnick',
             :user => 'testuser',

@@ -4,15 +4,14 @@ require 'chansey/irc_client/server'
 
 module Chansey
   module IrcClient
-    class ConnectionAttempter
-      include EventMachine::Deferrable
-
+    class ConnectionMonitor
       DEFAULT_IRC_PORT = 6667
       CONNECTION_DELAY_SECONDS = 5
 
-      def initialize(config, log)
+      def initialize(config, log, &block)
         @config = config
         @log = log
+        @handler = block
         @server_counter = 0
         @next_attempt = Time.now
 
@@ -22,6 +21,7 @@ module Chansey
       private
       def schedule_attempt
         delay = (@next_attempt - Time.now).to_i
+        @connection_deferrable = EventMachine::DefaultDeferrable.new
 
         if delay > 0
           @log.debug "Scheduling connection attempt in #{delay} seconds"
@@ -72,16 +72,24 @@ module Chansey
 
       def connect(address, port)
         @log.debug "Connecting to #{address}:#{port}"
-        EventMachine.connect(address, port, Connection, @config, @log) do |c|
-          @log.info "Connected to #{address}:#{port}"
-          d = c.connected
 
-          d.callback do
-            @log.info "Registered to #{address}:#{port}"
-            succeed Server.new(c, @config)
+        EventMachine.connect(address, port, Connection, @config, @log) do |c|
+          connection_complete_deferrable = c.connected
+
+          connection_complete_deferrable.callback do
+            @log.info "Connected to #{address}:#{port}"
+
+            Server.new(c, @config) do |success, server|
+              if success
+                @connection_deferrable.succeed(server)
+              else
+                @log.error "Registration failed to #{address}:#{port}"
+                schedule_attempt
+              end
+            end
           end
 
-          d.errback do
+          connection_complete_deferrable.errback do
             @log.error "Connection failed to #{address}:#{port}"
             schedule_attempt
           end
