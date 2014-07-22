@@ -81,6 +81,7 @@ module Chansey
 
             Server.new(c, @config) do |success, server|
               if success
+                @log.info "Registered to #{address}:#{port}"
                 @connection_deferrable.succeed(server)
               else
                 @log.error "Registration failed to #{address}:#{port}"
