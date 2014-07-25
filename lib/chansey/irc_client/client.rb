@@ -9,16 +9,24 @@ module Chansey
         @config = config
         @connections = {}
         @log = log
+        @handler = lambda { }
       end
 
       def connect(network)
         case x = @connections[network]
         when nil
           @log.debug("Starting connection attempt for #{network}")
-          @connections[network] = ConnectionMonitor.new(@config.fetch(network), @log)
+
+          @connections[network] = ConnectionMonitor.new(@config.fetch(network), @log) do |msg, ctx|
+            @handler.call(msg, ctx)
+          end
         when x.class == ConnectionMonitor
           x
         end
+      end
+
+      def handler(&block)
+        @handler = block
       end
     end
   end

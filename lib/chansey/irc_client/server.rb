@@ -6,10 +6,19 @@ module Chansey
         @config = config
         @connection = connection
         @connection.handler = method(:on_message)
+        @handler = lambda { }
         @on_registration_callback = block
 
         @connection.send_data "NICK #{@config['nick']}"
         @connection.send_data "USER #{@config['user']} 8 * :#{@config['fullname']}"
+      end
+
+      def handler(&block)
+        @handler = block
+      end
+
+      def send(msg)
+        @connection.send_data(msg)
       end
 
       private
@@ -20,6 +29,8 @@ module Chansey
         when :ping
           @connection.send_data "PONG :#{message[:trailing]}"
         end
+
+        @handler.call(message, self)
       end
     end
   end
