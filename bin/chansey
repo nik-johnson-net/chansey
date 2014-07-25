@@ -5,7 +5,7 @@ require 'logger'
 require 'trollop'
 require 'yaml'
 
-require 'chansey/irc_client/client'
+require 'chansey/bot'
 
 def main(opts)
   # Set logging to be STDOUT if the log option is not specified
@@ -23,8 +23,7 @@ def main(opts)
 
   begin
     EventMachine.run do
-      irc_client = Chansey::IrcClient::Client.new(config['irc'], log)
-      irc_client.connect('cognet')
+      Chansey::Bot.new(config, log)
     end
 
   # NOTE: Yes, this rescues Exception. This is intentional to log all fatals.

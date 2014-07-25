@@ -36,8 +36,8 @@ module Chansey
         nil
       end
 
-      def route(route, *c_args)
-        @router[route].each do |registration|
+      def route(path, *c_args)
+        @router[path].each do |registration|
           begin
             registration.callback.call(*c_args)
           rescue => e

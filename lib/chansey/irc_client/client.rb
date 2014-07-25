@@ -5,11 +5,11 @@ module Chansey
     class Client
       DEFAULT_IRC_PORT = 6667
 
-      def initialize(config, log)
+      def initialize(config, router, log)
         @config = config
         @connections = {}
         @log = log
-        @handler = lambda { }
+        @router = router
       end
 
       def connect(network)
@@ -18,15 +18,17 @@ module Chansey
           @log.debug("Starting connection attempt for #{network}")
 
           @connections[network] = ConnectionMonitor.new(@config.fetch(network), @log) do |msg, ctx|
-            @handler.call(msg, ctx)
+            route(msg, ctx)
           end
         when x.class == ConnectionMonitor
           x
         end
       end
 
-      def handler(&block)
-        @handler = block
+      private
+      def route(msg, ctx)
+        path = "irc/#{msg[:command]}"
+        @router.route(path, msg, ctx)
       end
     end
   end
