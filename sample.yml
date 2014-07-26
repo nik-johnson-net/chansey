@@ -5,7 +5,7 @@ irc:
       user: 'chansey2'
       fullname: 'Chansey v2'
       servers: ['irc.tamu.edu']
-      channels: ['#tamulug']
+      channels: ['#bottest']
 
 plugins:
   plugins: ['/tmp/test.rb']

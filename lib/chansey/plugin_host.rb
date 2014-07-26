@@ -16,7 +16,6 @@ module Chansey
             @loaded = true
           rescue => e
             @log.warn "Could not load plugin #{@path}: #{e}\n#{e.backtrace.join("\n")}"
-            # TODO(njohnson) log it
           end
         end
 
@@ -36,9 +35,11 @@ module Chansey
       @router = router
       @services = services.dup.freeze
       @mod_factory = lambda do |contents, path=""|
-        new_mod = Module.new do
+        new_mod = Module.new
+        new_mod.instance_exec(@router, @services) do |rtr, srv|
+          @router = rtr
+          @services = srv
         end
-        
         new_mod.instance_eval(contents, path)
       end
 
