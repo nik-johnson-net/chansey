@@ -1,6 +1,11 @@
 irc:
-  cognet:
-    nick: 'chansey2'
-    user: 'chansey2'
-    fullname: 'Chansey v2'
-    servers: ['irc.tamu.edu']
+  networks:
+    cognet:
+      nick: 'chansey2'
+      user: 'chansey2'
+      fullname: 'Chansey v2'
+      servers: ['irc.tamu.edu']
+      channels: ['#tamulug']
+
+plugins:
+  plugins: ['/tmp/test.rb']

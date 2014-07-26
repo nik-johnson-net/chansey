@@ -91,10 +91,10 @@ module Chansey
       end
 
       def handoff(connection)
-        Server.new(c, @config) do |success, server|
+        Server.new(connection, @config) do |success, server|
           if success
-            @log.info "Registered to #{address}:#{port}"
-            server.handler = @handler
+            @log.info "Registered"
+            server.handler(&@handler)
             @connection_deferrable.succeed(server)
           else
             @log.error "Registration failed to #{address}:#{port}"

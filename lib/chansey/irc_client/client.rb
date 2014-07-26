@@ -10,6 +10,8 @@ module Chansey
         @connections = {}
         @log = log
         @router = router
+
+        @config['networks'].each { |k,v| connect(k) }
       end
 
       def connect(network)
@@ -17,7 +19,7 @@ module Chansey
         when nil
           @log.debug("Starting connection attempt for #{network}")
 
-          @connections[network] = ConnectionMonitor.new(@config.fetch(network), @log) do |msg, ctx|
+          @connections[network] = ConnectionMonitor.new(@config['networks'].fetch(network), @log) do |msg, ctx|
             route(msg, ctx)
           end
         when x.class == ConnectionMonitor

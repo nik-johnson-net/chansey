@@ -6,7 +6,7 @@ module Chansey
         @config = config
         @connection = connection
         @connection.handler = method(:on_message)
-        @handler = lambda { }
+        @handler = lambda { |m,c| }
         @on_registration_callback = block
 
         @connection.send_data "NICK #{@config['nick']}"
@@ -26,6 +26,7 @@ module Chansey
         case message[:command]
         when :'001'
           @on_registration_callback.call(true, self)
+          @config['channels'].each { |chan| send("JOIN #{chan}") }
         when :ping
           @connection.send_data "PONG :#{message[:trailing]}"
         end
