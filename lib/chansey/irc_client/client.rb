@@ -19,7 +19,7 @@ module Chansey
         when nil
           @log.debug("Starting connection attempt for #{network}")
 
-          @connections[network] = ConnectionMonitor.new(@config['networks'].fetch(network), @log) do |msg, ctx|
+          @connections[network] = ConnectionMonitor.new(network, @config['networks'].fetch(network), @log) do |msg, ctx|
             route(msg, ctx)
           end
         when x.class == ConnectionMonitor
@@ -29,7 +29,7 @@ module Chansey
 
       private
       def route(msg, ctx)
-        path = "irc/#{msg[:command]}"
+        path = "irc/event/#{msg[:command]}"
         @router.route(path, msg, ctx)
       end
     end

@@ -8,10 +8,11 @@ module Chansey
       DEFAULT_IRC_PORT = 6667
       CONNECTION_DELAY_SECONDS = 5
 
-      def initialize(config, log, &block)
+      def initialize(network, config, log, &block)
         @config = config
         @log = log
         @handler = block
+        @network = network
         @server_counter = 0
         @next_attempt = Time.now
 
@@ -91,7 +92,7 @@ module Chansey
       end
 
       def handoff(connection)
-        Server.new(connection, @config) do |success, server|
+        Server.new(@network, connection, @config) do |success, server|
           if success
             @log.info "Registered"
             server.handler(&@handler)
