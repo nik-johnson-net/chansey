@@ -1,8 +1,0 @@
-feeds:
-    - 'http://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml'
-timer: 120
-
-amqp:
-    exchange: 'chansey'
-
-service_name: 'rss'
