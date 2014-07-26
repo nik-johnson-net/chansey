@@ -5,7 +5,7 @@ require 'logger'
 require 'trollop'
 require 'yaml'
 
-require 'chansey/bot'
+require 'chansey'
 
 def main(opts)
   # Set logging to be STDOUT if the log option is not specified
