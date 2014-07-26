@@ -1,3 +1,5 @@
+require_relative 'lib/chansey/version'
+
 DESCRIPTION = <<eos
   A framework for building a service which interacts with multiple services
   using runtime loadable plugins.
@@ -6,8 +8,7 @@ eos
 Gem::Specification.new do |s|
   s.name        = 'chansey'
   s.version     = '0.0.1'
-  # TODO(njohnson) Update to BSD when ready
-  # s.licenses    = []
+  s.licenses    = ['BSD-3-Clause']
   s.summary     = "A bot framework for interacting with other applications"
   s.description = DESCRIPTION
   s.authors     = ["Nik Johnson"]
