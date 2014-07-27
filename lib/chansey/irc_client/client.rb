@@ -1,3 +1,4 @@
+require 'chansey/irc_client/command'
 require 'chansey/irc_client/connection_monitor'
 
 module Chansey
@@ -12,6 +13,14 @@ module Chansey
         @router = router
 
         @config['networks'].each { |k,v| connect(k) }
+
+        @command_filters = [
+          Command::NickPrefixedPrivmsgFilter.new,
+          Command::StrPrefixedPrivmsgFilter.new(@config['command_prefix'] || "\0"),
+
+          # Specify last as a Catch-All for private messages
+          Command::DirectPrivmsgFilter.new
+        ]
       end
 
       def connect(network)
@@ -28,9 +37,22 @@ module Chansey
       end
 
       private
+      def detect_command(msg, ctx)
+        # First filter to return a Command object wins
+        @command_filters.reduce(nil) do |cmd_obj, filter|
+          cmd_obj ||= filter.filter(msg, ctx)
+        end
+      end
+
       def route(msg, ctx)
         path = "irc/event/#{msg[:command]}"
         @router.route(path, msg, ctx)
+
+        # Detect and route bot commands
+        if cmd = detect_command(msg, ctx)
+          path = "irc/command/#{cmd.command}"
+          @router.route(path, cmd, ctx)
+        end
       end
     end
   end

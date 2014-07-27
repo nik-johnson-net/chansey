@@ -2,20 +2,20 @@ module Chansey
   module IrcClient
     class Server
       attr_reader :network
-      attr_reader :current_nick
+      attr_reader :nick
 
       # Block is called upon successful registration
       def initialize(network, connection, config, &block)
         @config = config
         @connection = connection
         @connection.handler = method(:on_message)
-        @current_nick = @config['nick']
+        @nick = @config['nick']
         @handler = lambda { |m,c| }
         @network = network
         @on_registration_callback = block
 
-        @connection.send_data "NICK #{@current_nick}"
-        @connection.send_data "USER #{@current_nick} 8 * :#{@config['fullname']}"
+        @connection.send_data "NICK #{@nick}"
+        @connection.send_data "USER #{@nick} 8 * :#{@config['fullname']}"
       end
 
       def handler(&block)
