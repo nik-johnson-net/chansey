@@ -1,5 +1,7 @@
 module Chansey
   class PluginHost
+    BUNDLED_PLUGIN_PATH = Dir.new(File.expand_path('../../../plugins', __FILE__))
+
     class Plugin
       def initialize(path, log, mod_factory)
         @path = path
@@ -11,6 +13,8 @@ module Chansey
 
       def load
         if !@loaded
+          @log.info "Loading plugin #{@path}"
+
           begin
             try_load
             @loaded = true
@@ -43,8 +47,19 @@ module Chansey
         new_mod.instance_eval(contents, path)
       end
 
-      @plugins = config['plugins'].map { |p| Plugin.new(p, log, @mod_factory) }
+      # Turns plugin paths into Dir objects and append the default path
+      @plugin_paths = config.fetch('plugin_paths', []).
+        map { |pp| Dir.new pp }.
+        push(BUNDLED_PLUGIN_PATH)
 
+      # Filter to a list of files and prepare Plugin objects for them all
+      @plugins = @plugin_paths.flat_map do |dir|
+        dir.select do |f|
+          File.file?(File.expand_path(f, dir.path))
+        end.map { |f| File.expand_path(f, dir.path) }
+      end.map { |file| Plugin.new(file, log, @mod_factory) }
+
+      # Load all plugins
       @plugins.each { |p| p.load }
     end
   end

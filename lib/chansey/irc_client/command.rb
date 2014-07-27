@@ -19,7 +19,7 @@ module Chansey
       module PrefixFilter
         def prefix_filter(prefix, m, ctx)
           if m[:command] == :privmsg && m[:trailing].start_with?(prefix)
-            command, arg = m[:trailing][prefix..-1].split(limit=2)
+            command, arg = m[:trailing][prefix.length..-1].split($;, 2)
 
             if Command.sanity_check_command(command)
               reply_recipient = if m[:middle][0] == ctx.nick

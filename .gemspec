@@ -13,7 +13,7 @@ Gem::Specification.new do |s|
   s.description = DESCRIPTION
   s.authors     = ["Nik Johnson"]
   s.email       = 'jumpandspintowin@gmail.com'
-  s.files       = Dir['lib/**/*.rb'] + Dir['test/**/*.rb'] + Dir['bin/*']
+  s.files       = Dir['lib/**/*.rb'] + Dir['bin/*'] + Dir['plugins/**/*']
   s.bindir      = 'bin'
   s.executables = 'chansey'
   s.homepage    = 'https://github.com/jumpandspintowin/chansey'
