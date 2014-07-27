@@ -18,7 +18,7 @@ module Chansey
           begin
             try_load
             @loaded = true
-          rescue => e
+          rescue ScriptError, StandardError => e
             @log.warn "Could not load plugin #{@path}: #{e}\n#{e.backtrace.join("\n")}"
           end
         end
