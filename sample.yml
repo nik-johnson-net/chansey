@@ -8,4 +8,6 @@ irc:
       channels: ['#bottest']
 
 plugins:
-  plugins: ['/tmp/test.rb']
+  plugins:
+    - source.rb
+    - minecraft_query.rb

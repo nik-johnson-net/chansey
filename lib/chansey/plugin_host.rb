@@ -52,15 +52,28 @@ module Chansey
         map { |pp| Dir.new pp }.
         push(BUNDLED_PLUGIN_PATH)
 
-      # Filter to a list of files and prepare Plugin objects for them all
-      @plugins = @plugin_paths.flat_map do |dir|
-        dir.select do |f|
-          File.file?(File.expand_path(f, dir.path))
-        end.map { |f| File.expand_path(f, dir.path) }
-      end.map { |file| Plugin.new(file, log, @mod_factory) }
+      # Iterate through plugins configured to autoload and find them.
+      @plugins = @config.fetch('plugins', []).
+        map { |p| search_for_plugin(p) }.
+        compact.
+        map { |p| Plugin.new(p, @log, @mod_factory) }
 
       # Load all plugins
       @plugins.each { |p| p.load }
+    end
+
+    private
+    def search_for_plugin(plugin_file)
+      path = @plugin_paths.flat_map do |dir|
+        dir.map { |f| File.expand_path(f, dir.path) }.
+          select { |f| File.file?(f) }
+      end.find { |f| File.basename(f, '.rb') == File.basename(plugin_file, '.rb') }
+
+      if !path
+        @log.warn "Could not find plugin: #{plugin_file}"
+      end
+
+      path
     end
   end
 end
