@@ -1,3 +1,5 @@
+require 'chansey/util/deferrable'
+
 # Hack up EM's Async DNS class to do SRV
 class SRVRequest < EM::DNS::Request
   def receive_answer(msg)
@@ -25,12 +27,75 @@ class SRVRequest < EM::DNS::Request
   end
 end
 
+class UT3Query
+  include EM::Deferrable
+
+  FullStat = Struct.new(:info, :players)
+
+  class Connection < EM::Connection
+    RANDOM = Random.new
+
+    def initialize(server, port, deferrable)
+      @server = server
+      @port   = port
+      @id     = RANDOM.bytes(4).unpack('L').first & 0x0F0F0F0F
+      @state  = :disconnected
+      @defer  = deferrable
+
+      handshake
+    end
+
+    def receive_data(data)
+      case @state
+      when :disconnected
+        raise "Received packet while disconnected"
+      when :handshake
+        _, _, @challenge = data.unpack('CLZ*')
+        @challenge = @challenge.to_i
+        @state = :connected
+
+        full_stat
+      when :connected
+        # TODO ID verification
+        data.slice!(0..15)
+        info, _, players = data.partition("\x00\x01player_\x00\x00")
+
+        info = Hash[*info.split("\x00")]
+        players = players.split("\x00")
+
+        @defer.succeed FullStat.new(info, players)
+
+        close_connection
+      end
+    end
+
+    private
+    def handshake
+      @state = :handshake
+      packet = [0xFE, 0xFD, 0x09, @id].pack('CCCN')
+      send_datagram(packet, @server, @port)
+    end
+
+    def full_stat
+      packet = [0xFE, 0xFD, 0x00, @id, @challenge, 0x00].pack('CCCNNN')
+      send_datagram(packet, @server, @port)
+    end
+  end
+
+  def initialize(server, port, timeout=2)
+    self.timeout(timeout)
+    EM.open_datagram_socket('0.0.0.0', '0', Connection, server, port, self)
+  end
+end
+
 class MinecraftQueryRequest
   include EM::Deferrable
 
-  DEFAULT_MINECRAFT_PORT = 25565
-  PORT_MIN = 0
-  PORT_MAX = 65535
+  DEFAULT_MINECRAFT_PORT    = 25565
+  PING_RESPONSE_TEMPLATE    = "%{server}: Players: %{players}/%{max_players} - Version: %{version} - MOTD: %{motd}"
+  PLAYERS_RESPONSE_TEMPLATE = "%{server}: Players online: %{player_list}"
+  PORT_MIN                  = 0
+  PORT_MAX                  = 65535
 
   class MinecraftResolver
     include EM::Deferrable
@@ -64,8 +129,6 @@ class MinecraftQueryRequest
     # Recursively resolve
     def resolve(targets)
       target = targets.shift
-
-      p target
 
       # If no more hosts to try then fail
       if target.nil?
@@ -112,6 +175,8 @@ class MinecraftQueryRequest
           response[4],
           response[5]
         )
+
+        close_connection
       end
 
       def unbind
@@ -164,21 +229,56 @@ class MinecraftQueryRequest
     mr.errback { |r| fail "could not resolve hostname #{hostname}" }
   end
 
+  private
   def query_server(addr, port)
-    MinecraftPing.new(addr, port).
-      callback do |*args|
-        #TODO Handle success
-        succeed args
-      end.
-      errback do |*args|
-        #TODO Handle failure
-        fail args
-      end
+    ping_deferrable = MinecraftPing.new(addr, port)
+    ut3_deferrable = UT3Query.new(addr, port)
+
+    deferrable = Chansey::Util::DeferrableJoin.new(ping_deferrable, ut3_deferrable)
+    deferrable.callback do |mcping, ut3ping|
+      receive_responses(mcping, ut3ping)
+    end.errback do |mcping, ut3ping|
+      fail mcping.args.first
+    end
+  end
+
+  def receive_responses(mcping, ut3ping)
+    # MCPing is a required response. Fail without it.
+    if mcping.is_a? Chansey::Util::DeferrableJoin::FailedDeferrable
+      fail mcping.args.first
+      return
+    else
+      mcping = mcping.args.first
+    end
+
+    # UT3 is optional, simply set to nil if unavailable
+    if ut3ping.is_a? Chansey::Util::DeferrableJoin::FailedDeferrable
+      ut3ping = nil
+    else
+      ut3ping = ut3ping.args.first
+    end
+
+    # Render responses
+    succeed render(mcping, ut3ping)
+  end
+
+  def render(mcping, ut3ping)
+    ping_response = PING_RESPONSE_TEMPLATE % {
+      :server       => "#{@hostname}#{@port if @port != DEFAULT_MINECRAFT_PORT}",
+      :players      => mcping.players,
+      :max_players  => mcping.max_players,
+      :version      => mcping.version,
+      :motd         => mcping.motd,
+    }
+
+    ut3_response = ut3ping ? " -- #{ut3ping.players.join(', ')}" : ''
+
+    ping_response + ut3_response
   end
 end
 
 @router.register 'irc/command/mc' do |cmd, ctx|
   mqr = MinecraftQueryRequest.new(cmd.arg.split.first)
-  mqr.callback { |a| cmd.reply("Success: #{a.inspect}") }
-  mqr.errback { |a| cmd.reply("Failure: #{a.inspect}") }
+  mqr.callback { |response| cmd.reply(response) }
+  mqr.errback { |a| cmd.reply("Error: #{a}") }
 end
