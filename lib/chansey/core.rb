@@ -6,10 +6,31 @@ module Chansey
   class Core
     attr_reader :router
 
-    def initialize(config, modules = [], router = SimpleRouter.new)
+    def initialize(config, router = SimpleRouter.new)
       @router = router
       @config = config
-      @modules = modules
+      @modules = []
+
+     if block_given?
+       mods = yield self
+
+       if !mods.is_a?(Enumerable)
+         raise ArgumentError.new "Constructor block did not yield an Enumerable"
+       end
+
+       mods.each { |m| insert_module(m) }
+     end
+    end
+
+    def insert_module(mod)
+      if !mod.is_a?(Module)
+         raise ArgumentError.new "Module #{mod} did not inherit or include Chansey::Module"
+      end
+
+      mod.post_init
+      @modules << mod
+
+      mod
     end
 
     def run
