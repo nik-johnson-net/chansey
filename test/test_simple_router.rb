@@ -1,12 +1,12 @@
 require 'test/unit'
 
-require 'chansey/router/default_router'
+require 'chansey/simple_router'
 
-class DefaultRouterTest < Test::Unit::TestCase
+class SimpleRouterTest < Test::Unit::TestCase
   TEST_ROUTE = "test/route"
 
   def setup
-    @router = Chansey::Router::DefaultRouter.new
+    @router = Chansey::SimpleRouter.new
   end
 
   def test_add_basic_registration
@@ -54,16 +54,16 @@ class DefaultRouterTest < Test::Unit::TestCase
   end
 
   def test_gc
-    (1..Chansey::Router::DefaultRouter::DEFAULT_ROUTER_THRESHOLD).each do |i|
+    (1..Chansey::SimpleRouter::DEFAULT_ROUTER_THRESHOLD).each do |i|
       r = @router.register("r#{i}") { }
       r.cancel
     end
 
-    assert_equal(Chansey::Router::DefaultRouter::DEFAULT_ROUTER_THRESHOLD, @router.routes.length)
+    assert_equal(Chansey::SimpleRouter::DEFAULT_ROUTER_THRESHOLD, @router.routes.length)
 
-    r = @router.register("50") { }
+    r = @router.register("0") { }
     r.cancel
 
-    assert_equal(0, @router.routes.length)
+    assert_equal(1, @router.routes.length)
   end
 end

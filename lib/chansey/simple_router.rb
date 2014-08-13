@@ -1,3 +1,5 @@
+require 'logger'
+
 module Chansey
   class SimpleRouter
     DEFAULT_ROUTER_THRESHOLD = 100
