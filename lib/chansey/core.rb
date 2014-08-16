@@ -3,9 +3,14 @@ require 'eventmachine'
 require 'chansey/simple_router'
 
 module Chansey
+  # Core is the class which binds everything together.
   class Core
     attr_reader :router
 
+    # Initializes the core components and optionally evaluates a block that
+    # should return a list of instantiated modules.
+    # @param config [Hash<String, String>] A list of parameters to fine tune behavior
+    # @param router [#route] An object which handles routing
     def initialize(config, router = SimpleRouter.new)
       @router = router
       @config = config
@@ -22,24 +27,26 @@ module Chansey
      end
     end
 
+    # Adds a module to the Core
+    # @param mod [Chansey::Module] The module to insert
+    # @return the module
     def insert_module(mod)
       if !mod.is_a?(Module)
          raise ArgumentError.new "Module #{mod} did not inherit or include Chansey::Module"
       end
 
-      mod.post_init
       @modules << mod
 
       mod
     end
 
+    # Starts running everything by calling #post_init on modules
     def run
-      #TODO Don't call EM.run if already in loop
-      EM.run do
-        @modules.each do |m|
-          EM.next_tick { m.post_init(self) }
-        end
+      @modules.each do |m|
+        EM.next_tick { m.post_init(self) }
       end
+
+      nil
     end
   end
 end

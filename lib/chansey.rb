@@ -1,2 +1,2 @@
-require 'chansey/bot'
+require 'chansey/core'
 require 'chansey/version'
