@@ -1,12 +1,9 @@
-require 'logger'
-
 module Chansey
+  # SimpeRouter is a Router which does some simple garbage collection
   class SimpleRouter
     DEFAULT_ROUTER_THRESHOLD = 100
 
-    def initialize(log = Logger.new(nil))
-      @globs = []
-      @log = log
+    def initialize
       @router = Hash.new { |h, k| h[k] = [] }
     end
 
@@ -29,11 +26,7 @@ module Chansey
 
     def route(path, *c_args)
       @router[path].each do |registration|
-        begin
-          registration.callback.call(*c_args)
-        rescue => e
-          @log.error "Exception calling registration: #{registration}: #{e}\n#{e.backtrace.join("\n")}"
-        end
+        registration.call(*c_args)
       end
     end
 
@@ -42,6 +35,8 @@ module Chansey
     end
 
     private
+    # Represents a registered route to clients so they can easily cancel the
+    # registration
     class RouterRegistration
       attr_reader :route
       attr_reader :callback
@@ -50,6 +45,13 @@ module Chansey
         @route = route
         @router = router
         @callback = callback
+      end
+
+      def call(*args)
+        begin
+          @callback.call(*args)
+        rescue => e
+        end
       end
 
       def cancel
