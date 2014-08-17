@@ -1,30 +1,25 @@
 require 'eventmachine'
 
-require 'chansey/irc/line_decoder'
-require 'chansey/irc/irc_decoder'
+require 'chansey/modules/irc/line_decoder'
+require 'chansey/modules/irc/irc_decoder'
 
 module Chansey
   module Modules
     module Irc
       class Connection < EventMachine::Connection
-        attr_reader :connected
-        attr_accessor :handler
+        def initialize(handlers = [])
+          if !handlers.is_a?(Enumerable)
+            raise ArgumentError.new 'handlers is not an Enumerable'
+          elsif !handlers.all?{ |h| h.is_a? Irc::Handler }
+            raise ArgumentError.new 'handlers does not contain only Irc::Handler instances'
+          end
 
-        def initialize(handler = lambda { })
-          @handler = handler
+          @handlers = handlers
 
           @inbound_pipeline = [
             LineDecoder.new,
             IrcDecoder.new,
           ]
-        end
-
-        def connection_completed
-          @connected.succeed
-        end
-
-        def unbind
-          @connected.fail
         end
 
         def receive_data(data)
@@ -36,10 +31,14 @@ module Chansey
             close
           end
 
+          messages.each { |m| m.freeze }.freeze
+
           messages.each do |msg|
-            begin
-              @handler.call(msg, self)
-            rescue => e
+            @handlers.each do |h|
+              begin
+                h.call(msg, self)
+              rescue => e
+              end
             end
           end
         end
