@@ -23,7 +23,7 @@ module Chansey
         end
 
         def initialize(address, port, next_attempt, handlers)
-          super
+          super()
 
           @address  = address
           @handlers = handlers
