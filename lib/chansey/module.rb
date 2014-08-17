@@ -10,8 +10,8 @@ module Chansey
     def pre_shutdown
     end
 
-    def route(route, *args)
-      @core.router.route(path, *args)
+    def route(route, arg)
+      @core.router.route(path, arg)
     end
 
     def register(route, &block)
