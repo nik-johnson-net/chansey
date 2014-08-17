@@ -7,6 +7,9 @@ module Chansey
       @router = Hash.new { |h, k| h[k] = [] }
     end
 
+    # Register a block to the given route
+    # @param route [String] The route to observe
+    # @yieldparam block The callback
     def register(route, &block)
       registration = RouterRegistration.new(self, route, block)
       @router[route] << registration
@@ -16,6 +19,8 @@ module Chansey
       registration
     end
 
+    # Unregisters the router_registration from the router.
+    # @param router_registration [RouterRegistration] The Registration to remove
     def unregister(router_registration)
       @router[router_registration.route].delete router_registration
 
@@ -24,12 +29,17 @@ module Chansey
       nil
     end
 
+    # Fanout some argument to the listeners on a route
+    # @param path [String] The route
+    # @param arg Argument to pass
     def route(path, arg)
       @router[path].each do |registration|
         registration.call(arg)
       end
     end
 
+    # Returns a list of routes registered
+    # @return [Array<String>] Routes
     def routes
       @router.keys
     end
