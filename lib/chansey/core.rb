@@ -40,6 +40,12 @@ module Chansey
       mod
     end
 
+    # Returns a list of modules
+    # @return [Array<Chansey::Module>] modules
+    def modules
+      @modules.dup
+    end
+
     # Starts running everything by calling #post_init on modules
     def run
       @modules.each do |m|
