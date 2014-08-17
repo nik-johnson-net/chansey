@@ -10,8 +10,8 @@ module Chansey
         def initialize(handlers = [])
           if !handlers.is_a?(Enumerable)
             raise ArgumentError.new 'handlers is not an Enumerable'
-          elsif !handlers.all?{ |h| h.is_a? Irc::Handler }
-            raise ArgumentError.new 'handlers does not contain only Irc::Handler instances'
+          elsif !handlers.all?{ |h| h.respond_to? :call }
+            raise ArgumentError.new 'Not all handlers respond to #call'
           end
 
           @handlers = handlers
