@@ -49,7 +49,7 @@ module Chansey
     # Starts running everything by calling #post_init on modules
     def run
       @modules.each do |m|
-        EM.next_tick { m.post_init(self) }
+        EM.next_tick { m.post_init }
       end
 
       nil
