@@ -2,19 +2,22 @@ require 'eventmachine'
 
 require 'chansey/modules/irc/line_decoder'
 require 'chansey/modules/irc/irc_decoder'
+require 'chansey/modules/irc/handler'
 
 module Chansey
   module Modules
     module Irc
       class Connection < EventMachine::Connection
+
         def initialize(handlers = [])
           if !handlers.is_a?(Enumerable)
             raise ArgumentError.new 'handlers is not an Enumerable'
-          elsif !handlers.all?{ |h| h.respond_to? :call }
-            raise ArgumentError.new 'Not all handlers respond to #call'
+          elsif !handlers.all?{ |h| h.is_a? Irc::Handler }
+            raise ArgumentError.new 'Not all handlers include Irc::Handler'
           end
 
           @handlers = handlers
+          @registered = false
 
           @inbound_pipeline = [
             LineDecoder.new,
@@ -22,23 +25,25 @@ module Chansey
           ]
         end
 
-        def receive_data(data)
-          messages = []
+        def registered?
+          @registered
+        end
 
-          begin
-            messages = parse(data)
-          rescue => e
-            close
+        def unbind
+          @handlers.each do |h|
+            h.disconnected(self)
           end
+        end
 
+        def receive_data(data)
+          messages = parse(data)
           messages.each { |m| m.freeze }.freeze
 
           messages.each do |msg|
+            detect_registration
+
             @handlers.each do |h|
-              begin
-                h.call(msg, self)
-              rescue => e
-              end
+              h.receive_message(msg, self)
             end
           end
         end
@@ -50,6 +55,18 @@ module Chansey
         end
 
         private
+        def detect_registration(message)
+          if !registered? && ![:notice, :error].include?(message[:command])
+            @registered = true
+
+            @handlers.each do |h|
+              h.registered(self)
+            end
+          end
+
+          nil
+        end
+
         def parse(data)
           @inbound_pipeline.reduce([data]) do |objects, decoder|
             objects.flat_map { |o| decoder.map(o) }.compact
