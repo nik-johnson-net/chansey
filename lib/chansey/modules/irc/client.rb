@@ -1,3 +1,4 @@
+require 'chansey/module'
 require 'chansey/modules/irc/scheduled_connection'
 require 'chansey/modules/irc/handlers/autojoin'
 require 'chansey/modules/irc/handlers/ping'
