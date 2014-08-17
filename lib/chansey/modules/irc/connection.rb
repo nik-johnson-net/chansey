@@ -40,7 +40,7 @@ module Chansey
           messages.each { |m| m.freeze }.freeze
 
           messages.each do |msg|
-            detect_registration
+            detect_registration(msg)
 
             @handlers.each do |h|
               h.receive_message(msg, self)
