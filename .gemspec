@@ -1,10 +1,10 @@
 require_relative 'lib/chansey/version'
 
-DESCRIPTION = <<eos
+Gem::Specification.new do |s|
+  DESCRIPTION = <<eos
   A framework for building a service which interacts with multiple services.
 eos
 
-Gem::Specification.new do |s|
   s.name        = 'chansey'
   s.version     = Chansey::VERSION
   s.licenses    = ['BSD-3-Clause']
