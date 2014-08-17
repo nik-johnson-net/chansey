@@ -1,4 +1,4 @@
-require 'chansey/modules/irc/scheduled_completion'
+require 'chansey/modules/irc/scheduled_connection'
 require 'chansey/modules/irc/handlers/autojoin'
 require 'chansey/modules/irc/handlers/ping'
 
@@ -40,7 +40,7 @@ module Chansey
             Irc::Handlers::Autojoin.new(@autojoin_channels),
           ]
 
-          completion = Irc::ScheduledConnectionAttempt.new(@address, @port, @next_connection_attempt, handlers)
+          completion = Irc::ScheduledConnection.new(@address, @port, @next_connection_attempt, handlers)
           completion.completion do |type, arg|
             case type
             when :succeeded

@@ -4,7 +4,7 @@ require 'chansey/modules/irc/handler'
 module Chansey
   module Modules
     module Irc
-      class ScheduledConnectionAttempt < EM::Completion
+      class ScheduledConnection < EM::Completion
         # Internal class for handling registration
         class ConnectionCompletionHandler
           include Irc::Handler
