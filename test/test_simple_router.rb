@@ -34,7 +34,7 @@ class SimpleRouterTest < Test::Unit::TestCase
       pass = true
     end
 
-    @router.route(TEST_ROUTE)
+    @router.route(TEST_ROUTE, nil)
 
     assert(pass)
   end
@@ -48,7 +48,7 @@ class SimpleRouterTest < Test::Unit::TestCase
 
     r.cancel
 
-    @router.route(TEST_ROUTE)
+    @router.route(TEST_ROUTE, nil)
 
     assert(pass)
   end
