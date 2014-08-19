@@ -25,10 +25,9 @@ module Chansey
             end
 
             def new_status(status)
-                @log.debug "New status: #{status.from_user} - #{status.full_text}"
+                @log.debug "New status: #{status.inspect}"
                 data = {
                     :user => status.from_user,
-                    :userid => status.from_user_id,
                     :text => @decoder.decode(status.full_text),
                     :retweet => status.retweet?
                 }
